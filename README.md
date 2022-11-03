@@ -31,3 +31,13 @@
 
 ---
 ###具体示例参考scripts目录
+
+---
+##调试控制台
+![iamge](https://github.com/seasondi/rpg/blob/main/img/console.jpg)
+
+##gm指令
+![image](https://github.com/seasondi/rpg/blob/main/img/gm.jpg)
+
+##导表工具
+![image](https://github.com/seasondi/rpg/blob/main/img/export_table.jpg)
