@@ -1,0 +1,58 @@
+{
+  "workPath": "./scripts",
+  "serverId": 1001,
+  "logger": {
+    "logLevel": "debug"
+  },
+  "etcd": {
+    "endPoints": "localhost:12379"
+  },
+
+  "redis": {
+    "hosts": "localhost:6379",
+    "aloneMode": true
+  },
+
+  "mongo_common": {
+    "uri": "mongodb://localhost:27017"
+  },
+
+  "mongo_1": {
+    "uri": "mongodb://localhost:27017"
+  },
+
+  "gate_1": {
+    "addr": "0.0.0.0:6300"
+  },
+
+  "game_1": {
+    "addr": "0.0.0.0:6400",
+    "telnet": "0.0.0.0:7000",
+    "stub": true,
+    "db": "db_1"
+  },
+
+  "game_2": {
+    "addr": "0.0.0.0:6401",
+    "telnet": "0.0.0.0:7001",
+    "db": "db_1"
+  },
+
+  "db_1": {
+    "addr": "0.0.0.0:6500",
+    "database": "mongo_1"
+  },
+
+  "robot_1": {
+    "addr": "0.0.0.0:6100"
+  },
+
+  "robot_2": {
+    "addr": "0.0.0.0:6101"
+  },
+
+  "admin_1": {
+    "addr": "localhost:8888",
+    "enable_web": true
+  }
+}

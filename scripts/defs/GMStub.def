@@ -1,0 +1,14 @@
+<root>
+    <Volatile>
+        <IsStub>true</IsStub>
+    </Volatile>
+
+    <Implements>
+    </Implements>
+
+    <Properties>
+    </Properties>
+
+    <ServerMethods>
+    </ServerMethods>
+</root>

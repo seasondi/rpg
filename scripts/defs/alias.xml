@@ -1,0 +1,13 @@
+<root>
+    <ENTITY_ID> INT64 </ENTITY_ID>
+    <CLIENT_ID> UINT32 </CLIENT_ID>
+
+    <ITEM_MAP>MAP
+        <Key>UINT32</Key>
+        <Value>UINT32</Value>
+    </ITEM_MAP>
+
+    <ITEM_ARRAY>ARRAY
+        <Value>UINT32</Value>
+    </ITEM_ARRAY>
+</root>

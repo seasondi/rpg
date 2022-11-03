@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+option go_package = ".;message";
+
+message ExtraInfo {
+  string uuid = 1;
+}
+
+//发往db的消息
+message DBCommandRequest {
+  uint32 taskType = 1;
+  int64 entityId = 2;
+  string database = 3;
+  string collection = 4;
+  bytes filter = 5;
+  bytes data = 6;
+  ExtraInfo ex = 7;
+  uint32 dbType = 8;
+}
+
+//db返回的消息
+message DBCommandResponse {
+  uint32 taskType = 1;
+  int64 entityId = 2;
+  bytes data = 3;
+  bytes errMsg = 4;
+  ExtraInfo ex = 5;
+}
+
+//发往game的entity rpc消息
+message GameEntityRpc {
+  bytes data = 1;
+  string source = 2;
+  bool fromServer = 3;
+}
+
+//主动连接的一方将自己的服务名通知给对端
+message SayHello {
+  string serviceName = 1;
+}
+
+//game发往gate要求转发的消息
+message GameRouterRpc {
+  string target = 1;
+  bytes data = 2;
+}
+
+//创建entity消息请求
+message CreateEntityRequest {
+  string entityName = 1;
+  string serverName = 2;
+  ExtraInfo ex = 3;
+}
+
+//创建entity消息回包
+message CreateEntityResponse {
+  int64 entityId = 1;
+  string errMsg = 2;
+  string serverName = 3;
+  ExtraInfo ex = 4;
+}
+
+//服务器错误信息
+message ServerError {
+  string errMsg = 1;
+}
+
+//客户端连接绑定到entity
+message ClientBindEntity {
+  int64 entityId = 1;
+  uint32 clientId = 2;
+  bool unbind = 3;
+}
+
+//修改服务器时间
+message SetServerTimeOffset {
+  int32 offset = 1;
+  repeated string targets = 2;
+}

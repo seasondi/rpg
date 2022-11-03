@@ -1,0 +1,17 @@
+<root>
+    <Properties>
+    </Properties>
+
+    <ClientMethods>
+        <on_item_used>
+            <Arg>UINT32</Arg>
+        </on_item_used>
+    </ClientMethods>
+
+    <ServerMethods>
+        <use_item> <Exposed/>
+            <Arg>UINT32</Arg>
+            <Arg>UINT32</Arg>
+        </use_item>
+    </ServerMethods>
+</root>

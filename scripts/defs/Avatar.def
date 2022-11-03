@@ -1,0 +1,45 @@
+<root>
+    <Volatile>
+        <HasClient>true</HasClient>
+        <Persistent>true</Persistent>
+    </Volatile>
+
+    <Implements>
+        <Interface>Inventory</Interface>
+    </Implements>
+
+    <Properties>
+        <account_id>
+            <Type>ENTITY_ID</Type>
+        </account_id>
+        <level>
+            <Type>UINT32</Type>
+            <Flags>OWN_CLIENT</Flags>
+            <Default>1</Default>
+            <Persistent>true</Persistent>
+        </level>
+        <role_name>
+            <Type>STRING</Type>
+            <Flags>OWN_CLIENT</Flags>
+            <Persistent>true</Persistent>
+        </role_name>
+        <is_new_role>
+            <Type>BOOL</Type>
+            <Default>true</Default>
+            <Persistent>true</Persistent>
+        </is_new_role>
+        <items>
+            <Type>SYNC_TABLE</Type>
+            <Flags>OWN_CLIENT</Flags>
+        </items>
+    </Properties>
+
+    <ClientMethods>
+        <show_popup_message>
+            <Arg> STRING </Arg>
+        </show_popup_message>
+    </ClientMethods>
+
+    <ServerMethods>
+    </ServerMethods>
+</root>

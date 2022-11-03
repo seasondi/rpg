@@ -1,0 +1,35 @@
+<root>
+    <Volatile>
+        <HasClient>true</HasClient>
+    </Volatile>
+
+    <Implements>
+    </Implements>
+
+    <Properties>
+        <account>
+            <Type>STRING</Type>
+        </account>
+        <test>
+            <Type>ITEM_MAP</Type>
+        </test>
+        <test2>
+            <Type>ITEM_ARRAY</Type>
+        </test2>
+    </Properties>
+
+    <ClientMethods>
+        <show_popup_message>
+            <Arg>STRING</Arg>
+        </show_popup_message>
+    </ClientMethods>
+
+    <ServerMethods>
+        <login>
+            <Arg>ENTITY_ID</Arg>
+            <Arg>MAILBOX</Arg>
+            <Arg>TABLE</Arg>
+        </login>
+
+    </ServerMethods>
+</root>
