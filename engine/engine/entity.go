@@ -1,13 +1,13 @@
 package engine
 
 import (
-	"rpg/engine/message"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	lua "github.com/yuin/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
+	"rpg/engine/message"
 	"strconv"
 	"time"
 )
@@ -193,6 +193,7 @@ func (e *entity) final() {
 	e.removeRegisterInfo()
 	e.status = EntityDestroyed
 	clearEntitySaveID(e.entityId)
+	log.Debugf("%s destroy success", e.String())
 }
 
 func (e *entity) Status() EntityStatus {
@@ -200,7 +201,7 @@ func (e *entity) Status() EntityStatus {
 }
 
 func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
-	log.Infof("%s destroy. status: %d, isSaveDB: %v, immediately: %v", e.String(), e.status, isSaveDB, destroyImmediately)
+	log.Debugf("%s destroy. status: %d, isSaveDB: %v, needSaveDB: %v, immediately: %v", e.String(), e.status, isSaveDB, e.def.volatile.persistent, destroyImmediately)
 	if e.status == EntityDestroyed || e.status == EntityWaitDestroy {
 		return
 	} else if e.status == EntityDestroying {

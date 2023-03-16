@@ -1,11 +1,11 @@
 package main
 
 import (
-	"rpg/engine/engine"
-	"rpg/engine/message"
 	"errors"
 	lua "github.com/yuin/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
+	"rpg/engine/engine"
+	"rpg/engine/message"
 	"strconv"
 	"time"
 )
@@ -31,6 +31,10 @@ func (m *dbHandler) Decode(data []byte) (int, []byte, error) {
 func (m *dbHandler) OnConnect(conn *engine.TcpClient) {
 	log.Infof("connected to [%s]", conn.RemoteAddr())
 	engine.GetServerStep().FinishHandler(initDBProxy)
+	//game退出时,db先于game退出了,重新连接后继续触发存盘
+	if quit.Load() == quitStatusQuiting {
+		quit.Store(quitStatusBeginQuit)
+	}
 }
 
 func (m *dbHandler) OnDisconnect(conn *engine.TcpClient) {

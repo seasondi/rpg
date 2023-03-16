@@ -2,10 +2,12 @@
   "workPath": "./scripts",
   "serverId": 1001,
   "logger": {
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "logPath": "./log",
+    "console": true
   },
   "etcd": {
-    "endPoints": "localhost:12379"
+    "endPoints": "localhost:2379"
   },
 
   "redis": {

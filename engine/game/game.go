@@ -1,8 +1,8 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"github.com/panjf2000/gnet"
+	"rpg/engine/engine"
 	"runtime"
 	"time"
 )
@@ -29,7 +29,7 @@ func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	for !engine.GetServerStep().Completed() {
 		engine.GetServerStep().Print()
 		if delay := m.serverTick(); delay < 0 {
-			return
+			return gnet.Shutdown
 		}
 		time.Sleep(time.Second)
 	}

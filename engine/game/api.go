@@ -1,11 +1,11 @@
 package main
 
 import (
-	"rpg/engine/engine"
-	"rpg/engine/message"
 	"context"
 	lua "github.com/yuin/gopher-lua"
 	clientV3 "go.etcd.io/etcd/client/v3"
+	"rpg/engine/engine"
+	"rpg/engine/message"
 	"time"
 )
 

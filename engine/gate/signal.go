@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"rpg/engine/engine"
 	"syscall"
-	"time"
 )
 
 var gSysSignalMgr *systemSignal
@@ -36,15 +35,6 @@ func (m *systemSignal) init() {
 }
 
 func stopServer() {
-	for num := dbMgr.TaskMgr.TaskSize(); num > 0; num = dbMgr.TaskMgr.TaskSize() {
-		log.Info("buffed task still has ", num, " tasks")
-		time.Sleep(2 * time.Second)
-	}
-	dbMgr.TaskPool.Release()
-	for num := dbMgr.TaskPool.Running(); num > 0; num = dbMgr.TaskPool.Running() {
-		log.Info("task pool still has ", num, " running goroutines")
-		time.Sleep(2 * time.Second)
-	}
 	log.Infof("server quit success")
 	_ = gnet.Stop(context.TODO(), engine.ListenProtoAddr())
 }

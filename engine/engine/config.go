@@ -28,8 +28,10 @@ type config struct {
 }
 
 type loggerConfig struct {
-	LogLevel string //日志等级
-	Output   string //日志文件输出路径
+	LogLevel   string //日志等级
+	LogPath    string //日志文件输出路径
+	Console    bool   //是否输出到控制台
+	JsonFormat bool   //是否使用json格式输出
 }
 
 type etcdConfig struct {

@@ -1,11 +1,11 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"context"
 	"github.com/panjf2000/gnet"
 	lua "github.com/yuin/gopher-lua"
 	"go.uber.org/atomic"
+	"rpg/engine/engine"
 	"time"
 )
 
@@ -43,12 +43,12 @@ func checkStopServer() bool {
 	switch quit.Load() {
 	case quitStatusBeginQuit:
 		log.Info("server start quit")
+		engine.GetConfig().SaveNumPerTick = 50 //加快存盘速度
 		_ = engine.CallLuaMethodByName(engine.GetGlobalEntry(), "stop_server", 0)
-		engine.GetConfig().SaveNumPerTick = 1000 //加快存盘速度
 		quit.Store(quitStatusQuiting)
 	case quitStatusQuiting:
 		now := time.Now().Unix()
-		if now-lastQuittingCheckTime > 3 {
+		if now-lastQuittingCheckTime >= 2 {
 			lastQuittingCheckTime = now
 			if engine.CanStopped() {
 				quit.Store(quitStatusQuited)

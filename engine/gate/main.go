@@ -1,10 +1,10 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"fmt"
 	"github.com/panjf2000/gnet"
 	"github.com/sirupsen/logrus"
+	"rpg/engine/engine"
 )
 
 var log *logrus.Entry
@@ -18,9 +18,10 @@ func main() {
 	defer engine.Close()
 
 	getGameProxy().SyncFromEtcd()
+	initSysSignalMgr()
 
-	log.Info(gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
+	_ = gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithLogger(log.Logger),
-	))
+	)
 }
