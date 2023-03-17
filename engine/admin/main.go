@@ -1,12 +1,12 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"html/template"
 	"net"
 	"net/http"
+	"rpg/engine/engine"
 )
 
 var log *logrus.Entry
@@ -30,7 +30,6 @@ func StartWebConsole() {
 	http.HandleFunc("/debug", web)
 	log.Infof("命令行调试 listen at http://%s/dist/debug", addr)
 	log.Infof("GM指令 listen at http://%s/dist/gm", addr)
-	log.Infof("导表 listen at http://%s/dist/exportTable", addr)
 	_ = server.ListenAndServe()
 }
 

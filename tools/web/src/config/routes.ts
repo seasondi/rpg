@@ -12,12 +12,6 @@
     component: "./gm",
   },
   {
-    path: '/exportTable',
-    name: "export-table",
-    icon: "smile",
-    component: "./exportTable",
-  },
-  {
     path: '/',
     redirect: '/debug',
   },
