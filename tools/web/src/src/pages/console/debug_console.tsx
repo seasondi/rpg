@@ -68,12 +68,18 @@ const DebugConsole: React.FC<ConsoleProps> = (props) => {
 
   const onSubmitMultiCommand = () => {
     const val = formRef.current?.getFieldValue(props.name)
+    if(val === undefined || val === "") {
+      return
+    }
     addNewContent("SEND", val)
     formRef.current?.resetFields()
     props.onCommandSend(props.name, val)
   }
 
   const onSubmitSingleCommand = (e: any) => {
+    if(e.target.value === undefined || e.target.value === "") {
+      return
+    }
     addNewContent("SEND", e.target.value)
     setInputValue("")
     props.onCommandSend(props.name, e.target.value)
@@ -173,7 +179,7 @@ const DebugConsole: React.FC<ConsoleProps> = (props) => {
                 subTitle: {
                   dataIndex: "subTitle",
                 },
-                description: {
+                content: {
                   dataIndex: "content",
                 },
               }}
