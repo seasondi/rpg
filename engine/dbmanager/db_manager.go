@@ -1,14 +1,14 @@
 package main
 
 import (
-	"rpg/engine/engine"
-	"rpg/engine/message"
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/panjf2000/gnet"
 	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
+	"rpg/engine/engine"
+	"rpg/engine/message"
 	"time"
 )
 
@@ -33,6 +33,9 @@ func (m *eventLoop) init() {
 
 func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	log.Infof("DBManager[%s] server init complete, listen at: %s", engine.ServiceName(), server.Addr)
+	if err := engine.GetEtcd().RegisterServer(); err != nil {
+		log.Fatalf("register to etcd failed: %s", err.Error())
+	}
 	return gnet.None
 }
 

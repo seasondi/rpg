@@ -96,7 +96,7 @@ func (m *etcd) init() error {
 	if err != nil {
 		return err
 	}
-	return m.registerServer()
+	return nil
 }
 
 func (m *etcd) close() {
@@ -231,7 +231,7 @@ func (m *etcd) Delete(ctx context.Context, key string, opts ...clientV3.OpOption
 	return nil
 }
 
-func (m *etcd) registerServer() error {
+func (m *etcd) RegisterServer() error {
 	ctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
 	defer cancel()
 
@@ -265,7 +265,7 @@ func GetEtcdPrefixWithServer(prefix string) string {
 	return fmt.Sprintf("%s%d.", prefix, GetConfig().ServerId)
 }
 
-//ParseEtcdServerKey 返回值: 前缀,服务器ID,服务器编号,err
+// ParseEtcdServerKey 返回值: 前缀,服务器ID,服务器编号,err
 func ParseEtcdServerKey(s string) (string, ServerIdType, ServerTagType, error) {
 	r := strings.Split(s, ".")
 	if len(r) != 3 {
@@ -286,7 +286,7 @@ func GetEtcdStubKey(id EntityIdType) string {
 	return fmt.Sprintf("%s%d.%d", StubPrefix, GetConfig().ServerId, id)
 }
 
-//ParseEtcdStubKey 返回值: 前缀,服务器ID,entityId,err
+// ParseEtcdStubKey 返回值: 前缀,服务器ID,entityId,err
 func ParseEtcdStubKey(s string) (string, ServerIdType, EntityIdType, error) {
 	r := strings.Split(s, ".")
 	if len(r) != 3 {
@@ -307,7 +307,7 @@ func GetEtcdEntityKey(id EntityIdType) string {
 	return fmt.Sprintf("%s%d.%d", EntityPrefix, GetConfig().ServerId, id)
 }
 
-//ParseEtcdEntityKey 返回值: 前缀,服务器ID,entityId,err
+// ParseEtcdEntityKey 返回值: 前缀,服务器ID,entityId,err
 func ParseEtcdEntityKey(s string) (string, ServerIdType, EntityIdType, error) {
 	r := strings.Split(s, ".")
 	if len(r) != 3 {

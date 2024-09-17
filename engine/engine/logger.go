@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	nested "github.com/antonfisher/nested-logrus-formatter"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -41,13 +42,17 @@ func initLogger() error {
 	}
 	writers := make([]io.Writer, 0)
 	if cfg.Logger.LogPath != "" {
-		filename := cfg.Logger.LogPath + "/" + ServiceName() + "_" + time.Now().Format("20060102") + ".log"
-		fmt.Println(filename)
-		file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-		if err != nil {
-			return err
-		}
-		writers = append(writers, file)
+		filename := cfg.Logger.LogPath + "/" + ServiceName()
+		//file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		//if err != nil {
+		//	return err
+		//}
+		//writers = append(writers, file)
+		writer, _ := rotatelogs.New(
+			filename+"_%Y%m%d%H%M.log",
+			rotatelogs.WithRotationTime(time.Hour),
+		)
+		writers = append(writers, writer)
 	}
 	if cfg.Logger.Console {
 		writers = append(writers, os.Stdout)

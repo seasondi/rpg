@@ -1,10 +1,10 @@
 package engine
 
 import (
-	"rpg/engine/engine/RingBuffer"
 	"errors"
 	"go.uber.org/atomic"
 	"net"
+	"rpg/engine/engine/RingBuffer"
 	"sync"
 	"time"
 )
@@ -210,8 +210,11 @@ func (m *TcpClient) Connect(addr string, autoReconnect bool) {
 
 	go func() {
 		if m.autoReconnect {
-			for err := m.connect(); err != nil; err = m.connect() {
-				time.Sleep(time.Second)
+			tryTimes := 0
+			for err := m.connect(); err != nil && tryTimes < 60; err = m.connect() {
+				tryTimes += 1
+				log.Warnf("connect to %s error: %s, tryTimes: %d", addr, err.Error(), tryTimes)
+				time.Sleep(5 * time.Second)
 			}
 		} else {
 			if err := m.connect(); err != nil {

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"github.com/panjf2000/gnet"
+	"rpg/engine/engine"
 	"runtime"
 	"strings"
 	"time"
@@ -55,6 +55,9 @@ func (m *eventLoop) startTick(server gnet.Server) {
 
 func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	log.Infof("gate[%s] server init complete, listen at: %s", engine.ServiceName(), server.Addr)
+	if err := engine.GetEtcd().RegisterServer(); err != nil {
+		log.Fatalf("register to etcd failed: %s", err.Error())
+	}
 	go m.startTick(server)
 	return gnet.None
 }

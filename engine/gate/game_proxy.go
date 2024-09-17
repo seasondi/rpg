@@ -130,7 +130,7 @@ func (m *gameProxy) HandleUpdateGame(key string, value engine.EtcdValue) {
 			conn:   gameConn,
 			isStub: isStub,
 		}
-		gameConn.Connect(addr, false)
+		gameConn.Connect(addr, true)
 	}
 }
 
@@ -232,7 +232,7 @@ func (m *gameProxy) HandleMainTick() {
 	}
 }
 
-//getEntryStubConn 获取入口stub的连接信息
+// getEntryStubConn 获取入口stub的连接信息
 func (m *gameProxy) getEntryStubConn() *engine.TcpClient {
 	if m.entryStub == nil {
 		return nil
@@ -245,7 +245,7 @@ func (m *gameProxy) getEntryStubConn() *engine.TcpClient {
 	return nil
 }
 
-//sendRpcToGame 发送entity rpc消息到指定game
+// sendRpcToGame 发送entity rpc消息到指定game
 func (m *gameProxy) sendRpcToGame(game *engine.TcpClient, msgTy uint8, clientId engine.ConnectIdType, data []byte) ([]byte, gnet.Action) {
 	pb := &message.GameEntityRpc{
 		Data:   data,
@@ -268,16 +268,19 @@ func (m *gameProxy) sendRpcToGame(game *engine.TcpClient, msgTy uint8, clientId 
 	}
 	head := engine.GenMessageHeader(svrMsgType, clientId)
 	if buf, err := engine.GetProtocol().MessageWithHead(head, pb); err == nil {
-		n, _ := game.Send(buf)
-		log.Tracef("send %d bytes to game %s", n, game.Context())
+		if n, gErr := game.Send(buf); gErr != nil {
+			log.Warnf("send %d bytes to %s, bufLen: %d failed: %s", n, game.Context(), len(buf), gErr.Error())
+		} else {
+			log.Tracef("send %d bytes to %s, bufLen: %d", n, game.Context(), len(buf))
+		}
 	} else {
-		log.Warnf("send rpc to game encode error: %s", err.Error())
+		log.Warnf("send rpc to %s encode error: %s", game.Context(), err.Error())
 	}
 
 	return nil, gnet.None
 }
 
-//sendProtoToGameByName 内部消息发往指定serviceName的game
+// sendProtoToGameByName 内部消息发往指定serviceName的game
 func (m *gameProxy) sendProtoToGameByName(gameName string, ty uint8, msg proto.Message) error {
 	if conn := getGameProxy().getGameConnByName(gameName); conn != nil {
 		return m.sendProtoToGame(conn, ty, msg)
@@ -285,19 +288,22 @@ func (m *gameProxy) sendProtoToGameByName(gameName string, ty uint8, msg proto.M
 	return fmt.Errorf("no game named %s", gameName)
 }
 
-//sendProtoToGame 内部消息发往指定连接的game
+// sendProtoToGame 内部消息发往指定连接的game
 func (m *gameProxy) sendProtoToGame(gameConn *engine.TcpClient, ty uint8, msg proto.Message) error {
 	head := engine.GenMessageHeader(ty, 0)
 	if w, err := engine.GetProtocol().MessageWithHead(head, msg); err == nil {
-		n, err := gameConn.Send(w)
-		log.Tracef("send %d bytes to %s", n, gameConn.RemoteAddr())
+		if n, gErr := gameConn.Send(w); gErr != nil {
+			log.Warnf("send %d bytes to %s, bufLen: %d failed: %s", n, gameConn.Context(), len(w), gErr.Error())
+		} else {
+			log.Tracef("send %d bytes to game %s, bufLen: %d", n, gameConn.Context(), len(w))
+		}
 		return err
 	} else {
 		return err
 	}
 }
 
-//ClientSendToGame 客户端消息发往game
+// ClientSendToGame 客户端消息发往game
 func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte) ([]byte, gnet.Action) {
 	log.Tracef("received message from client %s type: %d, data %+v", client.RemoteAddr(), msgTy, data)
 	clientId := getClientId(client)
@@ -321,8 +327,8 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 		log.Debugf("unmarshal client message error: %s, msgType: %d, cleintId: %d", err.Error(), msgTy, clientId)
 		return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 	}
-	if gameConn == nil {
-		//log.Warnf("gate send to game, client id[%d] has no game connection, client message type: %d", clientId, msgTy)
+	if gameConn == nil || gameConn.IsDisconnected() {
+		log.Warnf("gate send to game, client id[%d] has no game connection, client message type: %d", clientId, msgTy)
 		if msgTy != engine.ClientMsgTypeLogin {
 			//直接断连接
 			return genServerErrorMessage(engine.ErrMsgClientNotLogin), gnet.Close
@@ -362,7 +368,7 @@ func (m *gameProxy) getGameConnByName(name string) *engine.TcpClient {
 	return nil
 }
 
-//sayHello gate连接到game后向game同步自身信息
+// sayHello gate连接到game后向game同步自身信息
 func (m *gameProxy) sayHello(gameConn *engine.TcpClient) {
 	if gameConn == nil {
 		return
@@ -406,7 +412,7 @@ func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 	return nil
 }
 
-//bindEntity 连接绑定到entity
+// bindEntity 连接绑定到entity
 func (m *gameProxy) bindEntity(clientId engine.ConnectIdType, entityId engine.EntityIdType, conn *engine.TcpClient) {
 	if _, find := m.clientToGame[clientId]; !find {
 		m.clientToGame[clientId] = make(map[engine.EntityIdType]*engine.TcpClient)
@@ -415,7 +421,7 @@ func (m *gameProxy) bindEntity(clientId engine.ConnectIdType, entityId engine.En
 	log.Infof("client conn[%s:%d] bind entityId[%d] from game[%v] ", engine.ServiceName(), clientId, entityId, conn.Context())
 }
 
-//unBindEntity 连接解绑entity
+// unBindEntity 连接解绑entity
 func (m *gameProxy) unBindEntity(clientId engine.ConnectIdType, entityId engine.EntityIdType) {
 	if games, find := m.clientToGame[clientId]; find {
 		if game, ok := games[entityId]; ok {
@@ -435,7 +441,7 @@ func genServerErrorMessage(msg string) []byte {
 	return buf
 }
 
-//getClientId 获取客户端连接的clientId
+// getClientId 获取客户端连接的clientId
 func getClientId(c gnet.Conn) engine.ConnectIdType {
 	if c == nil {
 		return 0
@@ -446,7 +452,7 @@ func getClientId(c gnet.Conn) engine.ConnectIdType {
 	return 0
 }
 
-//toServerMessageType 将客户端消息类型转换为服务器内部通信消息类型
+// toServerMessageType 将客户端消息类型转换为服务器内部通信消息类型
 func toServerMessageType(ty uint8) uint8 {
 	switch ty {
 	case engine.ClientMsgTypeLogin:

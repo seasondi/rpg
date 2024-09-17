@@ -36,6 +36,10 @@ func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	engine.GetEntityManager().SetConnFinder(getGateProxy().GetGateConn)
 	log.Infof("game[%s] server init complete, listen at: %s", engine.ServiceName(), server.Addr)
 
+	if err := engine.GetEtcd().RegisterServer(); err != nil {
+		log.Fatalf("register to etcd failed: %s", err.Error())
+	}
+
 	go m.startTick()
 	return gnet.None
 }

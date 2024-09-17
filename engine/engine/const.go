@@ -53,7 +53,7 @@ const (
 	bootstrapLua  = "bootstrap.lua" //初始启动脚本
 )
 
-//进程类型
+// 进程类型
 const (
 	STGate ServerType = iota
 	STGame
@@ -62,14 +62,14 @@ const (
 	STRobot
 )
 
-//引擎注册给entity的属性
+// 引擎注册给entity的属性
 const (
 	entityFieldType = "__type"
 	entityFieldName = "__name"
 	entityFieldId   = "id"
 )
 
-//mongo中记录的非def定义的字段
+// mongo中记录的非def定义的字段
 const (
 	MongoFieldId   = entityFieldId
 	MongoFieldName = entityFieldName
@@ -86,7 +86,7 @@ const (
 
 type DBTaskType uint32
 
-//db的任务类型
+// db的任务类型
 const (
 	DBTaskTypeQueryOne   DBTaskType = iota //查询单条数据
 	DBTaskTypeUpdateOne                    //更新单条数据
@@ -98,7 +98,7 @@ const (
 	DBTaskTypeMax
 )
 
-//etcd关注的key前缀
+// etcd关注的key前缀
 const (
 	ServiceGamePrefix   = "game."
 	ServiceDBPrefix     = "db."
@@ -109,14 +109,14 @@ const (
 	EntityPrefix        = "entity."
 )
 
-//注册到etcd的对象类型, EtcdValueType取值
+// 注册到etcd的对象类型, EtcdValueType取值
 const (
 	EtcdTypeServer = "server" //游戏进程
 	EtcdTypeStub   = "stub"   //stub类型entity
 	EtcdTypeEntity = "entity" //entity
 )
 
-//注册到etcd的value map的key
+// 注册到etcd的value map的key
 const (
 	EtcdValueAddr   = "addr"   //进程地址
 	EtcdValueType   = "type"   //对象类型
@@ -128,7 +128,7 @@ const (
 	EtcdValueEntityId  = "entityId" //entity的id
 )
 
-//etcd租约ttl
+// etcd租约ttl
 const (
 	EtcdStubLeaseTTL   = 3
 	EtcdServerLeaseTTL = 3
@@ -140,7 +140,7 @@ const (
 	ClientMsgDataFieldArgs     = "4ac22" //__args, 参数
 )
 
-//与客户端交互消息类型, 取值范围[1,150]
+// 与客户端交互消息类型, 取值范围[1,150]
 const (
 	ClientMsgTypePropSync       = iota + 1 //同步属性给客户端 S->C
 	ClientMsgTypeEntityRpc                 //调用entity方法 C->S & S->C
@@ -152,7 +152,7 @@ const (
 	ClientMsgTypeHeartBeat                 //客户端心跳 C->S & S->C
 )
 
-//服务器内部消息类型,取值范围[151,255]
+// 服务器内部消息类型,取值范围[151,255]
 const (
 	ServerMessageTypeHeartBeat           = iota + 151 //心跳
 	ServerMessageTypeLogin                            //登录
@@ -170,7 +170,7 @@ const (
 	ServerMessageTypeSetServerTime                    //修改服务器时间
 )
 
-//ClientMsgTypeError类型的消息内容
+// ClientMsgTypeError类型的消息内容
 const (
 	ErrMsgClientConnectionInvalid = "INVALID_CLIENT_CONNECTION" //无效的客户端连接
 	ErrMsgClientNotLogin          = "CLIENT_NOT_LOGIN"          //尚未登录
@@ -181,7 +181,7 @@ const (
 
 const StubEntryMethod = "entry" //entry stub必须定义的函数,登录主入口
 
-//脚本层的接口名
+// 脚本层的接口名
 const (
 	onServerTimeUpdate = "on_server_time_update" //服务器时间变化时脚本层回调
 	onReload           = "on_reload"             //热更
