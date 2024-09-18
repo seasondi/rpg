@@ -18,6 +18,7 @@ type dataType interface {
 	SetDefault(string) error                    //设置默认值
 	ParseDefaultVal(string) (lua.LValue, error) //解析默认值
 	ParseFromLua(lua.LValue) interface{}        //将lua类型解析为golang类型
+	ParseRawFromLua(lua.LValue) interface{}     //将lua类型解析为golang类型,但是不对数字key做特殊处理,适用于发给客户端
 	ParseToLua(interface{}) lua.LValue          //将golang类型解析为lua类型
 }
 
@@ -26,7 +27,7 @@ type dataTypeDetail struct {
 	name       string     //属性名称(如果dataType描述的是函数参数,则是函数名)
 }
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtInt8 struct {
 	detail dataTypeDetail
 }
@@ -82,13 +83,17 @@ func (m *dtInt8) ParseFromLua(v lua.LValue) interface{} {
 	return int8(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtInt8) ParseRawFromLua(v lua.LValue) interface{} {
+	return int8(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtInt8) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtInt16 struct {
 	detail dataTypeDetail
 }
@@ -144,13 +149,17 @@ func (m *dtInt16) ParseFromLua(v lua.LValue) interface{} {
 	return int16(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtInt16) ParseRawFromLua(v lua.LValue) interface{} {
+	return int16(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtInt16) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtInt32 struct {
 	detail dataTypeDetail
 }
@@ -206,13 +215,17 @@ func (m *dtInt32) ParseFromLua(v lua.LValue) interface{} {
 	return int32(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtInt32) ParseRawFromLua(v lua.LValue) interface{} {
+	return int32(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtInt32) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtInt64 struct {
 	detail dataTypeDetail
 }
@@ -268,13 +281,17 @@ func (m *dtInt64) ParseFromLua(v lua.LValue) interface{} {
 	return int64(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtInt64) ParseRawFromLua(v lua.LValue) interface{} {
+	return int64(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtInt64) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtUint8 struct {
 	detail dataTypeDetail
 }
@@ -330,13 +347,17 @@ func (m *dtUint8) ParseFromLua(v lua.LValue) interface{} {
 	return uint8(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtUint8) ParseRawFromLua(v lua.LValue) interface{} {
+	return uint8(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtUint8) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtUint16 struct {
 	detail dataTypeDetail
 }
@@ -392,13 +413,17 @@ func (m *dtUint16) ParseFromLua(v lua.LValue) interface{} {
 	return uint16(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtUint16) ParseRawFromLua(v lua.LValue) interface{} {
+	return uint16(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtUint16) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtUint32 struct {
 	detail dataTypeDetail
 }
@@ -454,13 +479,17 @@ func (m *dtUint32) ParseFromLua(v lua.LValue) interface{} {
 	return uint32(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtUint32) ParseRawFromLua(v lua.LValue) interface{} {
+	return uint32(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtUint32) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtUint64 struct {
 	detail dataTypeDetail
 }
@@ -516,13 +545,17 @@ func (m *dtUint64) ParseFromLua(v lua.LValue) interface{} {
 	return uint32(defaultSerialize(m, v).(lua.LNumber))
 }
 
+func (m *dtUint64) ParseRawFromLua(v lua.LValue) interface{} {
+	return uint32(defaultSerialize(m, v).(lua.LNumber))
+}
+
 func (m *dtUint64) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseNumber(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtBool struct {
 	detail dataTypeDetail
 }
@@ -572,6 +605,10 @@ func (m *dtBool) ParseFromLua(v lua.LValue) interface{} {
 	return bool(defaultSerialize(m, v).(lua.LBool))
 }
 
+func (m *dtBool) ParseRawFromLua(v lua.LValue) interface{} {
+	return bool(defaultSerialize(m, v).(lua.LBool))
+}
+
 func (m *dtBool) ParseToLua(v interface{}) lua.LValue {
 	switch val := v.(type) {
 	case bool:
@@ -583,7 +620,7 @@ func (m *dtBool) ParseToLua(v interface{}) lua.LValue {
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtString struct {
 	detail dataTypeDetail
 }
@@ -625,13 +662,17 @@ func (m *dtString) ParseFromLua(v lua.LValue) interface{} {
 	return string(defaultSerialize(m, v).(lua.LString))
 }
 
+func (m *dtString) ParseRawFromLua(v lua.LValue) interface{} {
+	return string(defaultSerialize(m, v).(lua.LString))
+}
+
 func (m *dtString) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseString(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtFloat struct {
 	detail  dataTypeDetail
 	decimal int //示例: 保留两位小数则decimal为100
@@ -690,6 +731,10 @@ func (m *dtFloat) ParseFromLua(v lua.LValue) interface{} {
 	return float64(r.(lua.LNumber))
 }
 
+func (m *dtFloat) ParseRawFromLua(v lua.LValue) interface{} {
+	return m.ParseFromLua(v)
+}
+
 func (m *dtFloat) ParseToLua(v interface{}) lua.LValue {
 	val := defaultParseNumber(m, v).(lua.LNumber)
 	return lua.LNumber(math.Trunc(float64(val)*float64(m.decimal)) / float64(m.decimal))
@@ -697,7 +742,7 @@ func (m *dtFloat) ParseToLua(v interface{}) lua.LValue {
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtTable struct {
 	detail dataTypeDetail
 }
@@ -742,13 +787,20 @@ func (m *dtTable) ParseFromLua(v lua.LValue) interface{} {
 	return TableToMap(v.(*lua.LTable))
 }
 
+func (m *dtTable) ParseRawFromLua(v lua.LValue) interface{} {
+	if m.IsSameType(v) == false {
+		v = m.Default()
+	}
+	return TableToMap(v.(*lua.LTable))
+}
+
 func (m *dtTable) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseTable(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtMap struct {
 	detail dataTypeDetail
 	key    dataType
@@ -825,6 +877,29 @@ func (m *dtMap) ParseFromLua(v lua.LValue) interface{} {
 	return r
 }
 
+func (m *dtMap) ParseRawFromLua(v lua.LValue) interface{} {
+	if m.IsSameType(v) == false {
+		v = m.Default()
+	}
+
+	r := make(map[string]interface{})
+	r2 := make(map[int64]interface{})
+	switch converted := v.(type) {
+	case *lua.LTable:
+		for ck, cv := converted.Next(lua.LNil); ck != lua.LNil; ck, cv = converted.Next(ck) {
+			if ck.Type() == lua.LTNumber {
+				r2[int64(ck.(lua.LNumber))] = m.value.ParseFromLua(cv)
+			} else {
+				r[ck.String()] = m.value.ParseFromLua(cv)
+			}
+		}
+	}
+	if len(r2) > 0 {
+		return r2
+	}
+	return r
+}
+
 func (m *dtMap) ParseToLua(v interface{}) lua.LValue {
 	t := luaL.NewTable()
 	success := true
@@ -855,8 +930,8 @@ func (m *dtMap) ParseToLua(v interface{}) lua.LValue {
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
-//注意！！！脚本层修改数组的某个元素不会被检测到,需要脚本层自行保证修改后仍然是有效的数组
+// --------------------------------------------------------------------
+// 注意！！！脚本层修改数组的某个元素不会被检测到,需要脚本层自行保证修改后仍然是有效的数组
 type dtArray struct {
 	detail dataTypeDetail
 	value  dataType
@@ -931,6 +1006,23 @@ func (m *dtArray) ParseFromLua(v lua.LValue) interface{} {
 	return r
 }
 
+func (m *dtArray) ParseRawFromLua(v lua.LValue) interface{} {
+	if m.IsSameType(v) == false {
+		v = m.Default()
+	}
+
+	r := make([]interface{}, 0)
+	switch converted := v.(type) {
+	case *lua.LTable:
+		ck, cv := converted.Next(lua.LNil)
+		for ck != lua.LNil {
+			r = append(r, m.value.ParseRawFromLua(cv))
+			ck, cv = converted.Next(ck)
+		}
+	}
+	return r
+}
+
 func (m *dtArray) ParseToLua(v interface{}) lua.LValue {
 	t := luaL.NewTable()
 	switch converted := v.(type) {
@@ -942,6 +1034,10 @@ func (m *dtArray) ParseToLua(v interface{}) lua.LValue {
 			} else {
 				luaL.RawSet(t, nk, m.value.ParseToLua(val))
 			}
+		}
+	case []interface{}:
+		for idx, val := range converted {
+			luaL.RawSet(t, lua.LNumber(idx+1), m.value.ParseToLua(val))
 		}
 	default:
 		log.Warnf("value[%+v] cannot set to %s", v, m.Type())
@@ -955,7 +1051,7 @@ func (m *dtArray) ParseToLua(v interface{}) lua.LValue {
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtStruct struct {
 	detail dataTypeDetail
 	props  map[string]propertyInfo
@@ -1009,10 +1105,10 @@ func (m *dtStruct) IsSameType(v lua.LValue) bool {
 				return false
 			}
 		}
-		if fieldCount != len(m.props) {
-			log.Errorf("value[%+v] field count[%d] not match to type[%s]", v, fieldCount, m.Type())
-			return false
-		}
+		//if fieldCount != len(m.props) {
+		//	log.Errorf("value[%+v] field count[%d] not match to type[%s]", v, fieldCount, m.Type())
+		//	return false
+		//}
 	default:
 		return false
 	}
@@ -1031,7 +1127,7 @@ func (m *dtStruct) ParseDefaultVal(_ string) (lua.LValue, error) {
 	return r, nil
 }
 
-//AssignToStruct 赋值给struct,非table类型则失败,否则只取匹配的部分
+// AssignToStruct 赋值给struct,非table类型则失败,否则只取匹配的部分
 func (m *dtStruct) AssignToStruct(t *lua.LTable, v lua.LValue) error {
 	if v.Type() != lua.LTTable {
 		return fmt.Errorf("%s cannot assign to %s", v.Type().String(), m.Type())
@@ -1062,6 +1158,22 @@ func (m *dtStruct) ParseFromLua(v lua.LValue) interface{} {
 	return r
 }
 
+func (m *dtStruct) ParseRawFromLua(v lua.LValue) interface{} {
+	if m.IsSameType(v) == false {
+		v = m.Default()
+	}
+
+	r := make(map[string]interface{})
+	switch converted := v.(type) {
+	case *lua.LTable:
+		for propName, pInfo := range m.props {
+			val := converted.RawGet(lua.LString(propName))
+			r[propName] = pInfo.dt.ParseRawFromLua(val)
+		}
+	}
+	return r
+}
+
 func (m *dtStruct) ParseToLua(v interface{}) lua.LValue {
 	t := m.Default().(*lua.LTable)
 	success := true
@@ -1086,7 +1198,7 @@ func (m *dtStruct) ParseToLua(v interface{}) lua.LValue {
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtMailBox struct {
 	detail dataTypeDetail
 }
@@ -1135,13 +1247,17 @@ func (m *dtMailBox) ParseFromLua(v lua.LValue) interface{} {
 	return TableToMailBox(v.(*lua.LTable))
 }
 
+func (m *dtMailBox) ParseRawFromLua(v lua.LValue) interface{} {
+	return m.ParseFromLua(v)
+}
+
 func (m *dtMailBox) ParseToLua(v interface{}) lua.LValue {
 	return defaultParseMailBox(m, v)
 }
 
 //--------------------------------------------------------------------
 
-//--------------------------------------------------------------------
+// --------------------------------------------------------------------
 type dtSyncTable struct {
 	detail dataTypeDetail
 }
@@ -1195,6 +1311,10 @@ func (m *dtSyncTable) ParseFromLua(v lua.LValue) interface{} {
 		v = m.Default()
 	}
 	return TableToMap(luaL.GetField(v, SyncTableFieldProps).(*lua.LTable))
+}
+
+func (m *dtSyncTable) ParseRawFromLua(v lua.LValue) interface{} {
+	return m.ParseFromLua(v)
 }
 
 func (m *dtSyncTable) ParseToLua(v interface{}) lua.LValue {

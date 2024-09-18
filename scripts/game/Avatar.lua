@@ -4,7 +4,6 @@ Avatar.isAvatar = true
 
 function Avatar:on_init()
     print("call Avatar:on_init ", self.id)
-    self.items[1001] = {["item_id"] = 1001, ["item_num"] = 2}
 end
 
 function Avatar:on_get_client()
@@ -17,6 +16,11 @@ function Avatar:on_get_client()
     end
     self.level = 10
     self.client.show_popup_message("avatar get client")
+    self.client.test({[1]=2, [2]=3,[5]=10}, {1,9, 10, 20}, {id=10, name="1bc", cast=false, arr={9,7,8}, map={[10]=2, [20]=3}})
+end
+
+function Avatar:test(_, t1, t2, skill_info)
+    print("t1: ", t1, ", t2: ", t2, ", skill: ", skill_info)
 end
 
 function Avatar:on_lose_client()

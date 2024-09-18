@@ -9,11 +9,12 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/layeh/gopher-json v0.0.0-20201124131017-552bb3c4c3bf
+	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/panjf2000/ants/v2 v2.4.6
 	github.com/panjf2000/gnet v1.5.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
-	github.com/vmihailenco/msgpack/v5 v5.3.4
+	github.com/vmihailenco/msgpack/v4 v4.3.13
 	github.com/yuin/gopher-lua v0.0.0-20210529063254-f4c35e4016d9
 	go.etcd.io/etcd/api/v3 v3.5.0
 	go.etcd.io/etcd/client/v3 v3.5.0
@@ -35,7 +36,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/klauspost/compress v1.9.5 // indirect
-	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible // indirect
 	github.com/lestrrat-go/strftime v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
@@ -47,7 +47,7 @@ require (
 	github.com/spf13/pflag v1.0.3 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
-	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
+	github.com/vmihailenco/tagparser v0.1.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect
 	github.com/xdg-go/stringprep v1.0.2 // indirect
@@ -59,6 +59,7 @@ require (
 	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
+	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
 	google.golang.org/grpc v1.38.0 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect

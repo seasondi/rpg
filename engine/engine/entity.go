@@ -267,54 +267,54 @@ func (e *entity) GetEntityId() EntityIdType {
 	return e.entityId
 }
 
-//onSyncPropChanged 需要同步给客户端的属性变化
+// onSyncPropChanged 需要同步给客户端的属性变化
 func (e *entity) onSyncPropChanged(propName string, newVal lua.LValue, dt dataType) {
-	if e.client == nil {
-		return
-	}
-	propInfo := e.def.prop(propName)
-	if propInfo == nil {
-		return
-	}
-	if !propInfo.config.IsSyncProp() {
-		return
-	}
-	buf := map[string]interface{}{
-		ClientMsgDataFieldType:     ClientMsgTypePropSync,
-		ClientMsgDataFieldEntityID: e.entityId,
-		ClientMsgDataFieldArgs:     []interface{}{propName, dt.ParseFromLua(newVal)},
-	}
-	if data, err := genEntityRpcMessage(uint8(ServerMessageTypeEntityRpc), buf, e.client.mailbox.ClientId); err == nil {
-		e.client.mailbox.Send(data)
-		log.Tracef("%s prop[%s] changed, new: %v", e.String(), propName, newVal)
-	} else {
-		log.Errorf("%s sync prop[%s] error: %s", e.String(), propName, err.Error())
-	}
+	//if e.client == nil {
+	//	return
+	//}
+	//propInfo := e.def.prop(propName)
+	//if propInfo == nil {
+	//	return
+	//}
+	//if !propInfo.config.IsSyncProp() {
+	//	return
+	//}
+	//buf := map[string]interface{}{
+	//	ClientMsgDataFieldType:     ClientMsgTypePropSync,
+	//	ClientMsgDataFieldEntityID: e.entityId,
+	//	ClientMsgDataFieldArgs:     []interface{}{propName, dt.ParseRawFromLua(newVal)},
+	//}
+	//if data, err := genEntityRpcMessage(uint8(ServerMessageTypeEntityRpc), buf, e.client.mailbox.ClientId); err == nil {
+	//	e.client.mailbox.Send(data)
+	//	log.Tracef("%s prop[%s] changed, new: %v", e.String(), propName, newVal)
+	//} else {
+	//	log.Errorf("%s sync prop[%s] error: %s", e.String(), propName, err.Error())
+	//}
 }
 
-//onSyncTableUpdated SyncOnUpdate标记的table变化
+// onSyncTableUpdated SyncOnUpdate标记的table变化
 func (e *entity) onSyncTableUpdated(propName string, key lua.LValue, val lua.LValue) {
-	if e.client == nil {
-		return
-	}
-	buf := map[string]interface{}{
-		ClientMsgDataFieldType:     ClientMsgTypePropSyncUpdate,
-		ClientMsgDataFieldEntityID: e.entityId,
-	}
-	switch val.Type() {
-	case lua.LTNil:
-		buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, LuaTableValueNilField}
-	case lua.LTTable:
-		buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, TableToMap(val.(*lua.LTable))}
-	default:
-		buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, val}
-	}
-	if data, err := genEntityRpcMessage(uint8(ServerMessageTypeEntityRpc), buf, e.client.mailbox.ClientId); err == nil {
-		e.client.mailbox.Send(data)
-		log.Tracef("%s prop[%s] key[%s] changed to [%v]", e.String(), propName, key, val)
-	} else {
-		log.Errorf("%s sync prop[%s] error: %s", e.String(), propName, err.Error())
-	}
+	//if e.client == nil {
+	//	return
+	//}
+	//buf := map[string]interface{}{
+	//	ClientMsgDataFieldType:     ClientMsgTypePropSyncUpdate,
+	//	ClientMsgDataFieldEntityID: e.entityId,
+	//}
+	//switch val.Type() {
+	//case lua.LTNil:
+	//	buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, LuaTableValueNilField}
+	//case lua.LTTable:
+	//	buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, TableToMap(val.(*lua.LTable))}
+	//default:
+	//	buf[ClientMsgDataFieldArgs] = []interface{}{propName, key, val}
+	//}
+	//if data, err := genEntityRpcMessage(uint8(ServerMessageTypeEntityRpc), buf, e.client.mailbox.ClientId); err == nil {
+	//	e.client.mailbox.Send(data)
+	//	log.Tracef("%s prop[%s] key[%s] changed to [%v]", e.String(), propName, key, val)
+	//} else {
+	//	log.Errorf("%s sync prop[%s] error: %s", e.String(), propName, err.Error())
+	//}
 }
 
 func (e *entity) String() string {
@@ -386,7 +386,7 @@ func (e *entity) destroyTimerCb(...interface{}) {
 	e.Destroy(true, true)
 }
 
-//CheckDefServerMethod 检查通过返回函数原始名称, 否则返回传入的名称
+// CheckDefServerMethod 检查通过返回函数原始名称, 否则返回传入的名称
 func (e *entity) CheckDefServerMethod(method string, args []lua.LValue, fromClient bool) (string, error) {
 	mi := e.def.getServerMethod(method, !fromClient)
 	if mi == nil {
@@ -408,7 +408,7 @@ func (e *entity) CheckDefServerMethod(method string, args []lua.LValue, fromClie
 	return mi.methodName, nil
 }
 
-//CallDefServerMethod fromClient为false时method传入原始函数名, 否则传入mask name
+// CallDefServerMethod fromClient为false时method传入原始函数名, 否则传入mask name
 func (e *entity) CallDefServerMethod(method string, args []lua.LValue, fromClient bool) error {
 	name, err := e.CheckDefServerMethod(method, args, fromClient)
 	if err != nil {
@@ -429,7 +429,8 @@ func (e *entity) GetClient() *EntityClient {
 	return e.client
 }
 
-/*setClient将客户端连接绑定到entity,当c是nil时,primary无意义
+/*
+setClient将客户端连接绑定到entity,当c是nil时,primary无意义
 
 c: 客户端连接信息
 

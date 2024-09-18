@@ -10,4 +10,25 @@
     <ITEM_ARRAY>ARRAY
         <Value>UINT32</Value>
     </ITEM_ARRAY>
+
+    <skill_info>STRUCT
+        <id>
+            <Type>UINT64</Type>
+        </id>
+        <name>
+            <Type>STRING</Type>
+        </name>
+        <cast>
+            <Type>BOOL</Type>
+        </cast>
+        <arr>
+            <Type>ITEM_ARRAY</Type>>
+        </arr>
+        <map>
+            <Type>ITEM_MAP</Type>>
+        </map>
+        <newName>
+            <Type>ENTITY_ID</Type>>
+        </newName>
+    </skill_info>
 </root>

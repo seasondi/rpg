@@ -13,7 +13,7 @@ func initDataTypes() error {
 type dataTypes struct {
 }
 
-//NewDataTypeFromPropDef 从属性配置生成dataType
+// NewDataTypeFromPropDef 从属性配置生成dataType
 func (m *dataTypes) NewDataTypeFromPropDef(pDef propertyDef) (dataType, error) {
 	dt, err := m.newDataType(pDef.Type.typeName, pDef.Type.name)
 	if err != nil {
@@ -29,7 +29,7 @@ func (m *dataTypes) NewDataTypeFromPropDef(pDef propertyDef) (dataType, error) {
 	return dt, nil
 }
 
-//NewDataTypeFromPropType 从类型生成dataType, 适用于函数参数等只有属性类型配置的字段
+// NewDataTypeFromPropType 从类型生成dataType, 适用于函数参数等只有属性类型配置的字段
 func (m *dataTypes) NewDataTypeFromPropType(pType propType) (dataType, error) {
 	dt, err := m.newDataType(pType.typeName, pType.name)
 	if err != nil {
@@ -42,7 +42,7 @@ func (m *dataTypes) NewDataTypeFromPropType(pType propType) (dataType, error) {
 	return dt, nil
 }
 
-//please call NewDataTypeFromPropDef or NewDataTypeFromPropType
+// please call NewDataTypeFromPropDef or NewDataTypeFromPropType
 func (m *dataTypes) newDataType(typeName string, name string) (dataType, error) {
 	lowerName := strings.ToLower(typeName)
 	detail := dataTypeDetail{name: name}
@@ -80,12 +80,12 @@ func (m *dataTypes) newDataType(typeName string, name string) (dataType, error) 
 		dt = &dtStruct{detail: detail}
 	case dataTypeNameMailBox:
 		dt = &dtMailBox{detail: detail}
-	case dataTypeNameSyncTable:
-		if gSvrType == STRobot {
-			dt = &dtTable{detail: detail} //客户端按table处理即可
-		} else {
-			dt = &dtSyncTable{detail: detail}
-		}
+	//case dataTypeNameSyncTable:
+	//	if gSvrType == STRobot {
+	//		dt = &dtTable{detail: detail} //客户端按table处理即可
+	//	} else {
+	//		dt = &dtSyncTable{detail: detail}
+	//	}
 	default:
 		return nil, fmt.Errorf("not support type[%s]", typeName)
 	}
@@ -93,7 +93,7 @@ func (m *dataTypes) newDataType(typeName string, name string) (dataType, error) 
 	return dt, nil
 }
 
-//please call NewDataTypeFromPropDef or NewDataTypeFromPropType
+// please call NewDataTypeFromPropDef or NewDataTypeFromPropType
 func (m *dataTypes) completeDataType(tp propType, dt dataType) (dataType, error) {
 	switch dtt := dt.(type) {
 	case *dtMap:

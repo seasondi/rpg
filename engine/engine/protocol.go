@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/panjf2000/gnet"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/vmihailenco/msgpack/v4"
 )
 
 const (

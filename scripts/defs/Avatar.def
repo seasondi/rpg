@@ -28,18 +28,24 @@
             <Default>true</Default>
             <Persistent>true</Persistent>
         </is_new_role>
-        <items>
-            <Type>SYNC_TABLE</Type>
-            <Flags>OWN_CLIENT</Flags>
-        </items>
     </Properties>
 
     <ClientMethods>
         <show_popup_message>
             <Arg> STRING </Arg>
         </show_popup_message>
+        <test>
+            <t1>ITEM_MAP</t1>
+            <t2>ITEM_ARRAY</t2>
+            <skill>skill_info</skill>
+        </test>
     </ClientMethods>
 
     <ServerMethods>
+        <test> <Exposed/>
+            <t1>ITEM_MAP</t1>
+            <t2>ITEM_ARRAY</t2>
+            <skill>skill_info</skill>
+        </test>
     </ServerMethods>
 </root>

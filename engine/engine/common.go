@@ -35,7 +35,7 @@ var (
 	svrStep     *ServerStep        //服务器状态
 )
 
-//JsonToTable 不支持数组、字典混合格式
+// JsonToTable 不支持数组、字典混合格式
 func JsonToTable(v string) (*lua.LTable, error) {
 	if len(v) == 0 {
 		return luaL.NewTable(), nil
@@ -52,7 +52,7 @@ func JsonToTable(v string) (*lua.LTable, error) {
 	return r.(*lua.LTable), nil
 }
 
-//TableToJson 不支持数组、字典混合格式
+// TableToJson 不支持数组、字典混合格式
 func TableToJson(v *lua.LTable) (string, error) {
 	if v == nil {
 		return "", nil
@@ -61,12 +61,12 @@ func TableToJson(v *lua.LTable) (string, error) {
 	return string(r[:]), err
 }
 
-//numberToMapKey 将数字类型的key转换为带标记的字符串
+// numberToMapKey 将数字类型的key转换为带标记的字符串
 func numberToMapKey(key lua.LNumber) string {
 	return LuaTableNumberKeyPrefix + key.String()
 }
 
-//mapKeyToNumber 将带标记的数字字符串还原回数字
+// mapKeyToNumber 将带标记的数字字符串还原回数字
 func mapKeyToNumber(key string) (lua.LNumber, error) {
 	if strings.HasPrefix(key, LuaTableNumberKeyPrefix) {
 		if v, err := strconv.ParseFloat(key[len(LuaTableNumberKeyPrefix):], 64); err != nil {
@@ -79,7 +79,7 @@ func mapKeyToNumber(key string) (lua.LNumber, error) {
 	}
 }
 
-//TableToMap lua的table类型转换为golang map类型
+// TableToMap lua的table类型转换为golang map类型
 func TableToMap(t *lua.LTable) map[string]interface{} {
 	r := make(map[string]interface{})
 	k, v := t.Next(lua.LNil)
@@ -108,7 +108,7 @@ func TableToMap(t *lua.LTable) map[string]interface{} {
 	return r
 }
 
-//TableToArray lua的table类型转换为golang数组类型
+// TableToArray lua的table类型转换为golang数组类型
 func TableToArray(t *lua.LTable) []interface{} {
 	r := make([]interface{}, 0)
 	key, value := t.Next(lua.LNil)
@@ -170,14 +170,30 @@ func mapToTableImpl(m map[string]interface{}) *lua.LTable {
 			luaL.RawSet(t, name, lua.LString(value))
 		case map[string]interface{}:
 			luaL.RawSet(t, name, MapToTable(value))
+		case []interface{}:
+			tmp := make(map[string]interface{})
+			for idx, v := range value {
+				tmp[LuaTableNumberKeyPrefix+strconv.FormatInt(int64(idx+1), 10)] = v
+			}
+			luaL.RawSet(t, name, MapToTable(tmp))
 		default:
-			log.Warnf("map to lua table not support type: %s for %s", reflect.TypeOf(value).String(), name)
+			tp := reflect.TypeOf(value)
+			if tp.Kind() == reflect.Map {
+				tmp := make(map[string]interface{})
+				v := reflect.ValueOf(value)
+				for _, key := range v.MapKeys() {
+					tmp[LuaTableNumberKeyPrefix+strconv.FormatInt(key.Int(), 10)] = v.MapIndex(key).Interface()
+				}
+				luaL.RawSet(t, name, MapToTable(tmp))
+			} else {
+				log.Warnf("map to lua table not support type: %s for %s", reflect.TypeOf(value).String(), name)
+			}
 		}
 	}
 	return t
 }
 
-//MapToTable golang字典类型转换为lua table类型
+// MapToTable golang字典类型转换为lua table类型
 func MapToTable(m map[string]interface{}) *lua.LTable {
 	if m[mailboxFieldType] != nil {
 		return mapToMailBoxTable(m)
@@ -294,7 +310,7 @@ func newClientFunction(name string, owner EntityIdType) *lua.LTable {
 					passed = false
 					break
 				} else {
-					args = append(args, argPropType.dt.ParseFromLua(arg))
+					args = append(args, argPropType.dt.ParseRawFromLua(arg))
 				}
 			}
 			if passed {
@@ -394,8 +410,19 @@ func InterfaceToLValue(item interface{}) lua.LValue {
 	case MailBox:
 		return MailBoxToTable(data)
 	default:
-		log.Warnf("InterfaceToLvalues not handler type[%s]", reflect.TypeOf(item).String())
-		return lua.LNil
+		t := reflect.TypeOf(item)
+		if t.Kind() == reflect.Map {
+			tmp := make(map[string]interface{})
+			value := reflect.ValueOf(item)
+			for _, key := range value.MapKeys() {
+				tmp[LuaTableNumberKeyPrefix+strconv.FormatInt(key.Int(), 10)] = value.MapIndex(key).Interface()
+			}
+			tb := MapToTable(tmp)
+			return tb
+		} else {
+			log.Warnf("InterfaceToLvalues not handler type[%s]", t.String())
+			return lua.LNil
+		}
 	}
 }
 
@@ -503,7 +530,7 @@ func newSyncTable(name string) *lua.LTable {
 	return t
 }
 
-//LuaArrayToBsonD 将{{"a", 1}, {"b", 2}}格式的lua数组转换为bsonD格式
+// LuaArrayToBsonD 将{{"a", 1}, {"b", 2}}格式的lua数组转换为bsonD格式
 func LuaArrayToBsonD(t *lua.LTable) (bson.D, error) {
 	r := bson.D{}
 	key, value := t.Next(lua.LNil)

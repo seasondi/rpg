@@ -321,10 +321,11 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 			responseHeartBeatToClient(client)
 			return nil, gnet.None
 		} else {
+			log.Warnf("entity not bind, msgType: %d, cleintId: %d", msgTy, clientId)
 			return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 		}
 	} else {
-		log.Debugf("unmarshal client message error: %s, msgType: %d, cleintId: %d", err.Error(), msgTy, clientId)
+		log.Warnf("unmarshal client message error: %s, msgType: %d, cleintId: %d, data: %x", err.Error(), msgTy, clientId, data)
 		return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 	}
 	if gameConn == nil || gameConn.IsDisconnected() {

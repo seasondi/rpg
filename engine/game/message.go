@@ -1,15 +1,15 @@
 package main
 
 import (
-	"rpg/engine/engine"
-	"rpg/engine/message"
 	"errors"
 	"github.com/panjf2000/gnet"
 	lua "github.com/yuin/gopher-lua"
+	"rpg/engine/engine"
+	"rpg/engine/message"
 	"time"
 )
 
-//processHeartBeat 处理心跳
+// processHeartBeat 处理心跳
 func processHeartBeat(c gnet.Conn, clientId engine.ConnectIdType) error {
 	ctx, ok := c.Context().(*connContext)
 	if !ok {
@@ -24,7 +24,7 @@ func processHeartBeat(c gnet.Conn, clientId engine.ConnectIdType) error {
 	return nil
 }
 
-//processSyncGate 将gate连接与gate名称绑定
+// processSyncGate 将gate连接与gate名称绑定
 func processSyncGate(buf []byte, c gnet.Conn) error {
 	msg := message.SayHello{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -35,7 +35,7 @@ func processSyncGate(buf []byte, c gnet.Conn) error {
 	return nil
 }
 
-//processEntityRpc 处理entity函数调用
+// processEntityRpc 处理entity函数调用
 func processEntityRpc(buf []byte) error {
 	msg := message.GameEntityRpc{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -79,7 +79,7 @@ func processEntityRpc(buf []byte) error {
 	return nil
 }
 
-//processEntityLogin entity登录
+// processEntityLogin entity登录
 func processEntityLogin(buf []byte, clientId engine.ConnectIdType) error {
 	msg := message.GameEntityRpc{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -114,7 +114,7 @@ func processEntityLogin(buf []byte, clientId engine.ConnectIdType) error {
 	return nil
 }
 
-//processCreateEntity 创建entity
+// processCreateEntity 创建entity
 func processCreateEntity(buf []byte, c gnet.Conn) error {
 	msg := message.CreateEntityRequest{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -138,7 +138,7 @@ func processCreateEntity(buf []byte, c gnet.Conn) error {
 	return nil
 }
 
-//processCreateEntityResponse 创建entity结果通知
+// processCreateEntityResponse 创建entity结果通知
 func processCreateEntityResponse(buf []byte, _ gnet.Conn) error {
 	msg := message.CreateEntityResponse{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -152,7 +152,7 @@ func processCreateEntityResponse(buf []byte, _ gnet.Conn) error {
 	return nil
 }
 
-//processSetServerTime 设置服务器时间
+// processSetServerTime 设置服务器时间
 func processSetServerTime(buf []byte, _ gnet.Conn) error {
 	msg := message.SetServerTimeOffset{}
 	if err := msg.Unmarshal(buf); err != nil {
