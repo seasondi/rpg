@@ -311,23 +311,44 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 		log.Warn("gate send to game invalid client connection")
 		return genServerErrorMessage(engine.ErrMsgClientConnectionInvalid), gnet.None
 	}
+
+	//这里只检查非rpc消息
+	if busy := getClientProxy().updateActive(clientId, msgTy); busy {
+		log.Debugf("ignore too busy message, clientId: %d, msgType: %d", clientId, msgTy)
+		return nil, gnet.None
+	}
+
 	var gameConn *engine.TcpClient
-	if msgTy == engine.ClientMsgTypeLogin {
+	switch msgTy {
+	case engine.ClientMsgTypeLogin:
 		gameConn = m.getEntryStubConn()
-	} else if clientData, err := engine.GetProtocol().UnMarshal(data); err == nil {
-		if entityId := engine.InterfaceToInt(clientData[engine.ClientMsgDataFieldEntityID]); entityId > 0 {
-			gameConn = m.getGameConn(clientId, engine.EntityIdType(entityId))
-		} else if msgTy == engine.ClientMsgTypeHeartBeat { //尚未登录,由gate暂时接管心跳
-			responseHeartBeatToClient(client)
-			return nil, gnet.None
+	default:
+		if clientData, err := engine.GetProtocol().UnMarshal(data); err == nil {
+			if entityId := engine.InterfaceToInt(clientData[engine.ClientMsgDataFieldEntityID]); entityId > 0 {
+				gameConn = m.getGameConn(clientId, engine.EntityIdType(entityId))
+			} else if msgTy == engine.ClientMsgTypeHeartBeat { //尚未登录,由gate暂时接管心跳
+				responseHeartBeatToClient(client)
+				return nil, gnet.None
+			} else {
+				log.Warnf("entity not bind, msgType: %d, cleintId: %d", msgTy, clientId)
+				return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
+			}
+			//rpc metrics
+			if msgTy == engine.ClientMsgTypeEntityRpc {
+				if args, ok := clientData[engine.ClientMsgDataFieldArgs].([]interface{}); ok {
+					if name, ok := args[0].(string); ok {
+						if busyCount := getClientProxy().rpcMetrics(clientId, name); busyCount >= 3 {
+							return genServerErrorMessage(engine.ErrMsgTooBusy), gnet.None
+						}
+					}
+				}
+			}
 		} else {
-			log.Warnf("entity not bind, msgType: %d, cleintId: %d", msgTy, clientId)
+			log.Warnf("unmarshal client message error: %s, msgType: %d, cleintId: %d, data: %x", err.Error(), msgTy, clientId, data)
 			return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 		}
-	} else {
-		log.Warnf("unmarshal client message error: %s, msgType: %d, cleintId: %d, data: %x", err.Error(), msgTy, clientId, data)
-		return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 	}
+
 	if gameConn == nil || gameConn.IsDisconnected() {
 		log.Warnf("gate send to game, client id[%d] has no game connection, client message type: %d", clientId, msgTy)
 		if msgTy != engine.ClientMsgTypeLogin {
@@ -420,6 +441,8 @@ func (m *gameProxy) bindEntity(clientId engine.ConnectIdType, entityId engine.En
 	}
 	m.clientToGame[clientId][entityId] = conn
 	log.Infof("client conn[%s:%d] bind entityId[%d] from game[%v] ", engine.ServiceName(), clientId, entityId, conn.Context())
+	getClientProxy().setBindEntity(clientId, entityId)
+	getClientProxy().stopActiveCheck(clientId)
 }
 
 // unBindEntity 连接解绑entity

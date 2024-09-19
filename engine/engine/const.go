@@ -177,6 +177,7 @@ const (
 	ErrMsgServerNotReady          = "SERVER_NOT_READY"          //服务器尚未准备好
 	ErrMsgLoginByOther            = "LOGIN_BY_OTHER"            //被顶号
 	ErrMsgInvalidMessage          = "INVALID_MESSAGE"           //无效消息
+	ErrMsgTooBusy                 = "MESSAGE_TOO_BUSY"          //请求频率过于频繁
 )
 
 const StubEntryMethod = "entry" //entry stub必须定义的函数,登录主入口
