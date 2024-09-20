@@ -94,3 +94,10 @@ func (em *robotManager) genMetaTable(name string) *lua.LTable {
 	}
 	return em.metas[name]
 }
+
+func (em *robotManager) IsEntityLoaded(entityName string) bool {
+	if _, find := em.metas[entityName]; find {
+		return true
+	}
+	return false
+}

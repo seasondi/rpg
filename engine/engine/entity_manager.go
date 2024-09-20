@@ -302,3 +302,10 @@ func (em *entityManager) RemoveGateEntitiesConn(gateName string) {
 		delete(em.connMap, gateName)
 	}
 }
+
+func (em *entityManager) EntityIsLoaded(entityName string) bool {
+	if _, find := em.metas[entityName]; find {
+		return true
+	}
+	return false
+}

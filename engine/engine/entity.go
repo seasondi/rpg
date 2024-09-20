@@ -66,6 +66,9 @@ func (e *entity) init() error {
 		log.Warn(globalEntry + ".scriptPath is necessary, please set in script(relative path to \"WorkPath\" defined in config)")
 		return errors.New("scriptPath not defined")
 	}
+
+	isEntityLoaded := GetEntityManager().EntityIsLoaded(e.entityName)
+
 	e.activeTimerIds = make(map[int64]bool)
 	e.luaEntity = luaL.NewTable()
 	luaL.SetMetatable(e.luaEntity, GetEntityManager().genMetaTable(e.entityName))
@@ -75,11 +78,13 @@ func (e *entity) init() error {
 	if e.def == nil {
 		return fmt.Errorf("cannot find entity[%s] def, please check entities.xml", e.entityName)
 	}
-	if err := e.def.loadInterfaceFiles(); err != nil {
-		return err
-	}
-	if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + e.entityName + ".lua"); err != nil {
-		return err
+	if !isEntityLoaded {
+		if err := e.def.loadInterfaceFiles(); err != nil {
+			return err
+		}
+		if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + e.entityName + ".lua"); err != nil {
+			return err
+		}
 	}
 	GetEntityManager().registerEntity(e)
 	e.def.registerToEntity(e)

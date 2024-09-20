@@ -33,6 +33,9 @@ func (m *Robot) init() error {
 		log.Warn(globalEntry + ".scriptPath is necessary, please set in script(relative path to \"WorkPath\" defined in config)")
 		return errors.New("scriptPath not defined")
 	}
+
+	isEntityLoaded := GetRobotManager().IsEntityLoaded(m.entityName)
+
 	m.luaEntity = luaL.NewTable()
 	luaL.SetMetatable(m.luaEntity, GetRobotManager().genMetaTable(m.entityName))
 	m.luaEntity.RawSetString(entityFieldId, EntityIdToLua(m.entityId))
@@ -40,11 +43,13 @@ func (m *Robot) init() error {
 	if m.def == nil {
 		return fmt.Errorf("cannot find entity[%s] def, please check entities.xml", m.entityName)
 	}
-	if err := m.def.loadInterfaceFiles(); err != nil {
-		return err
-	}
-	if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + m.entityName + ".lua"); err != nil {
-		return err
+	if !isEntityLoaded {
+		if err := m.def.loadInterfaceFiles(); err != nil {
+			return err
+		}
+		if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + m.entityName + ".lua"); err != nil {
+			return err
+		}
 	}
 	GetRobotManager().registerEntity(m)
 	m.registerDef()

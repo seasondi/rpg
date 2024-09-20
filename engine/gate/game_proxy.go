@@ -315,7 +315,7 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 
 	//这里只检查非rpc消息
 	if busy := getClientProxy().updateActive(clientId, msgTy); busy {
-		log.Debugf("ignore too busy message, clientId: %d, msgType: %d", clientId, msgTy)
+		log.Warnf("ignore too busy message, clientId: %d, msgType: %d", clientId, msgTy)
 		return nil, gnet.None
 	}
 

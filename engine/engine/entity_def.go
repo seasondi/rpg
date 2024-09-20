@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//属性同步方式
+// 属性同步方式
 type syncFlag int
 
 const (
@@ -29,7 +29,7 @@ const (
 	readTypeFunctionArg                 //读取函数的参数
 )
 
-//def文件结构
+// def文件结构
 const (
 	defFieldRoot               = "root"          //根节点
 	defFieldVolatile           = "Volatile"      //基础配置
@@ -146,10 +146,10 @@ func flagStrToEnum(flag string) syncFlag {
 	return noClient
 }
 
-//readPropType 读取属性、函数参数.
-//el: 读取的xml标签
-//propName: 属性名称或者函数名
-//rtype: 读取类型
+// readPropType 读取属性、函数参数.
+// el: 读取的xml标签
+// propName: 属性名称或者函数名
+// rtype: 读取类型
 func readPropType(el *etree.Element, propName string, rtype readType) propType {
 	typeName := strings.Trim(el.Text(), "\n ")
 	lowerTypeName := strings.ToLower(typeName)
