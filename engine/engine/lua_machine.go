@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	lua "github.com/yuin/gopher-lua"
+	"sync"
 )
 
 type luaCommandHandler func(...interface{})
@@ -15,14 +16,19 @@ type luaCommandInfo struct {
 }
 
 type luaCommandMgr struct {
+	sync.Mutex
 	commands *list.List
 }
 
 func (m *luaCommandMgr) init() {
+	m.Lock()
+	defer m.Unlock()
 	m.commands = list.New()
 }
 
 func (m *luaCommandMgr) addCommand(handler luaCommandHandler, args []interface{}) {
+	m.Lock()
+	defer m.Unlock()
 	m.commands.PushBack(&luaCommandInfo{
 		f:    handler,
 		args: args,
@@ -30,6 +36,8 @@ func (m *luaCommandMgr) addCommand(handler luaCommandHandler, args []interface{}
 }
 
 func (m *luaCommandMgr) doCommands() {
+	m.Lock()
+	defer m.Unlock()
 	if m.commands.Len() == 0 {
 		return
 	}

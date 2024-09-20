@@ -45,10 +45,7 @@ func (m *eventLoop) startTick(server gnet.Server) {
 	defer runtime.UnlockOSThread()
 
 	for {
-		delay, action := m.serverTick()
-		if action == gnet.Shutdown {
-			m.OnShutdown(server)
-		}
+		delay, _ := m.serverTick()
 		time.Sleep(delay)
 	}
 }
@@ -79,7 +76,7 @@ func (m *eventLoop) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 }
 
 func (m *eventLoop) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
-	getDataProcessor().append(c, frame)
+	getDataProcessor().append(c, append([]byte{}, frame...))
 	return nil, gnet.None
 }
 

@@ -23,5 +23,6 @@ func main() {
 	_ = gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithLogger(log.Logger),
+		gnet.WithMulticore(true),
 	)
 }

@@ -65,7 +65,7 @@ func (m *eventLoop) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Ac
 			_ = processSyncGate(data, c)
 		}
 	default:
-		getDataProcessor().append(c, frame)
+		getDataProcessor().append(c, append([]byte{}, frame...))
 	}
 	return nil, gnet.None
 }

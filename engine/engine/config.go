@@ -23,7 +23,7 @@ type config struct {
 	Logger         loggerConfig  //日志配置
 	Etcd           etcdConfig    //etcd配置
 	Redis          *redisConfig  //redis配置
-	server         *serverConfig //服务器配置
+	Server         *serverConfig //服务器配置
 	vp             *viper.Viper  //配置文件读取模块
 }
 
@@ -91,7 +91,7 @@ func initConfig() error {
 		return fmt.Errorf("invalid server id: %d", cfg.ServerId)
 	}
 
-	if cfg.server = cfg.parseServerConfig(cfg.ServerKey()); cfg.server == nil {
+	if cfg.Server = cfg.parseServerConfig(cfg.ServerKey()); cfg.Server == nil {
 		return fmt.Errorf("server key[%s] config load failed", cfg.ServerKey())
 	}
 
@@ -151,9 +151,9 @@ func (m *config) ServerKey() string {
 	return key + strconv.FormatInt(int64(cmdLineMgr.Tag), 10)
 }
 
-//ServerConfig 本进程配置
+// ServerConfig 本进程配置
 func (m *config) ServerConfig() *serverConfig {
-	return m.server
+	return m.Server
 }
 
 func (m *config) GetServerConfigByName(name string) *serverConfig {
@@ -161,5 +161,5 @@ func (m *config) GetServerConfigByName(name string) *serverConfig {
 }
 
 func (m *config) GetAddr() string {
-	return m.server.Addr
+	return m.Server.Addr
 }

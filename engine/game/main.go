@@ -1,11 +1,11 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"fmt"
 	"github.com/panjf2000/gnet"
 	"github.com/sirupsen/logrus"
 	_ "net/http/pprof"
+	"rpg/engine/engine"
 	"time"
 )
 
@@ -30,7 +30,8 @@ func main() {
 
 	_ = gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
 		gnet.WithCodec(&engine.GNetCodec{}),
-		gnet.WithTCPKeepAlive(3*time.Second),
+		gnet.WithTCPKeepAlive(time.Minute),
 		gnet.WithLogger(log.Logger),
+		gnet.WithMulticore(true),
 	)
 }
