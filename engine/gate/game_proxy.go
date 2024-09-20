@@ -322,13 +322,17 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 	switch msgTy {
 	case engine.ClientMsgTypeLogin:
 		gameConn = m.getEntryStubConn()
+	case engine.ClientMsgTypeHeartBeat:
+		if entityId := m.getBindEntity(clientId); entityId == 0 {
+			responseHeartBeatToClient(client)
+			return nil, gnet.None
+		} else {
+			gameConn = m.getGameConn(clientId, entityId)
+		}
 	default:
 		if clientData, err := engine.GetProtocol().UnMarshal(data); err == nil {
 			if entityId := engine.InterfaceToInt(clientData[engine.ClientMsgDataFieldEntityID]); entityId > 0 {
 				gameConn = m.getGameConn(clientId, engine.EntityIdType(entityId))
-			} else if msgTy == engine.ClientMsgTypeHeartBeat { //尚未登录,由gate暂时接管心跳
-				responseHeartBeatToClient(client)
-				return nil, gnet.None
 			} else {
 				log.Warnf("entity not bind, msgType: %d, cleintId: %d", msgTy, clientId)
 				return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
@@ -432,6 +436,15 @@ func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 		}
 	}
 	return nil
+}
+
+func (m *gameProxy) getBindEntity(clientId engine.ConnectIdType) engine.EntityIdType {
+	if info, find := m.clientToGame[clientId]; find {
+		for key := range info {
+			return key
+		}
+	}
+	return 0
 }
 
 // bindEntity 连接绑定到entity

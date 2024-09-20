@@ -42,7 +42,6 @@ function Account:login(avtId, client, login_info)
     else
         avt = rpg.entities[avtId]
         if avt ~= nil then
-            rpg.setConnInfo(client, avt.id, false)
             self:on_login_success(avt.id, client, login_info)
         else
             rpg.loadEntityFromDB(avtId, function(id, err)
@@ -60,7 +59,8 @@ function Account:on_login_success(avtId, client, login_info)
     print("on_login_success avtId: ", avtId, ", login_info: ", login_info)
     avt = rpg.entities[avtId]
     avt.account_id = self.id
-    rpg.setConnInfo(client, avtId, false)
+    rpg.setConnInfo(client, self.id, false)
+    rpg.setConnInfo(client, avt.id, true)
 end
 
 function Account:on_login_failed(avtId)

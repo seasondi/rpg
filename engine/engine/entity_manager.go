@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/panjf2000/gnet"
 	lua "github.com/yuin/gopher-lua"
+	"time"
 )
 
 type entityGateConnFinder func(serverName string) gnet.Conn
@@ -242,12 +243,12 @@ func (em *entityManager) GetEntitiesByConn(mb *ClientMailBox) []EntityIdType {
 	return r
 }
 
-func (em *entityManager) SetHeartbeat(gateName string, clientId ConnectIdType, t int64) {
+func (em *entityManager) SetHeartbeat(gateName string, clientId ConnectIdType) {
 	if info, ok := em.connMap[gateName]; ok {
 		ids := info[clientId]
 		for id := range ids {
 			if ent := em.GetEntityById(id); ent != nil {
-				ent.lastHeartBeatTime = t
+				ent.lastHeartBeatTime = time.Now()
 			}
 		}
 	}

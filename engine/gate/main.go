@@ -5,6 +5,7 @@ import (
 	"github.com/panjf2000/gnet"
 	"github.com/sirupsen/logrus"
 	"rpg/engine/engine"
+	"time"
 )
 
 var log *logrus.Entry
@@ -24,5 +25,6 @@ func main() {
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithLogger(log.Logger),
 		gnet.WithMulticore(true),
+		gnet.WithTCPKeepAlive(3*time.Minute),
 	)
 }

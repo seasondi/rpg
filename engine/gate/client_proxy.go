@@ -190,7 +190,11 @@ func (m *ClientProxy) checkActive(clientId engine.ConnectIdType) bool {
 	m.metricsMutex.Lock()
 	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
-		if diff := time.Now().Sub(c.metrics.active.lastActiveTime); diff.Seconds() > 10 {
+		heartbeatDuration := engine.GetConfig().HeartBeatInterval
+		if heartbeatDuration <= 0 {
+			heartbeatDuration = engine.HeartbeatTick
+		}
+		if diff := time.Now().Sub(c.metrics.active.lastActiveTime); int32(diff.Seconds()) > 3*heartbeatDuration {
 			return false
 		} else {
 			return true

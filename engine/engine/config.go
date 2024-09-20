@@ -14,17 +14,18 @@ func GetConfig() *config {
 
 // config config配置
 type config struct {
-	WorkPath       string        //工作路径
-	ServerId       ServerIdType  //服务器ID
-	Release        bool          //是否正式环境
-	SaveInterval   int64         //单位: 分钟
-	SaveNumPerTick int32         //每个tick存盘的entity数量
-	PrintRpcLog    bool          //是否输出rpc日志
-	Logger         loggerConfig  //日志配置
-	Etcd           etcdConfig    //etcd配置
-	Redis          *redisConfig  //redis配置
-	Server         *serverConfig //服务器配置
-	vp             *viper.Viper  //配置文件读取模块
+	WorkPath          string        //工作路径
+	ServerId          ServerIdType  //服务器ID
+	Release           bool          //是否正式环境
+	SaveInterval      int64         //单位: 分钟
+	SaveNumPerTick    int32         //每个tick存盘的entity数量
+	HeartBeatInterval int32         //心跳间隔,单位秒
+	PrintRpcLog       bool          //是否输出rpc日志
+	Logger            loggerConfig  //日志配置
+	Etcd              etcdConfig    //etcd配置
+	Redis             *redisConfig  //redis配置
+	Server            *serverConfig //服务器配置
+	vp                *viper.Viper  //配置文件读取模块
 }
 
 type loggerConfig struct {

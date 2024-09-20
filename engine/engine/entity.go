@@ -44,7 +44,7 @@ type entity struct {
 	saveTimerId          int64            //自动存盘定时器
 	status               EntityStatus     //entity状态
 	stubLeaseResult      *etcdLeaseResult //stub在etcd的租约
-	lastHeartBeatTime    int64            //上次心跳时间
+	lastHeartBeatTime    time.Time        //上次心跳时间
 	heartbeatTimerId     int64            //心跳定时器
 	activeTimerIds       map[int64]bool   //已添加的定时器id
 }
@@ -554,19 +554,22 @@ func (e *entity) createClientEntity() error {
 }
 
 func (e *entity) checkHeartbeatCb(...interface{}) {
-	now := time.Now().Unix()
-	if e.lastHeartBeatTime == 0 {
-		e.lastHeartBeatTime = now
+	heartBeatDuration := cfg.HeartBeatInterval
+	if heartBeatDuration <= 0 {
+		heartBeatDuration = HeartbeatTick
 	}
-	if now-e.lastHeartBeatTime > 2*heartbeatTick {
-		log.Warnf("%s heartbeat check timeout", e.String())
+
+	if int32(time.Now().Sub(e.lastHeartBeatTime).Seconds()) > 3*heartBeatDuration {
+		log.Warnf("%s heartbeat check timeout, lastHeartBeatTime: %s", e.String(), e.lastHeartBeatTime.Format(time.RFC3339))
 		_ = e.setClient(nil, false)
 	}
 }
 
 func (e *entity) addCheckHeartbeatTimer() {
-	e.delCheckHeartBeatTimer()
-	e.heartbeatTimerId = GetTimer().AddTimer(time.Second, time.Second, e.checkHeartbeatCb)
+	if e.heartbeatTimerId == 0 {
+		e.lastHeartBeatTime = time.Now()
+		e.heartbeatTimerId = GetTimer().AddTimer(3*time.Second, 3*time.Second, e.checkHeartbeatCb)
+	}
 }
 
 func (e *entity) delCheckHeartBeatTimer() {

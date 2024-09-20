@@ -6,7 +6,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 	"rpg/engine/engine"
 	"rpg/engine/message"
-	"time"
 )
 
 // processHeartBeat 处理心跳
@@ -18,9 +17,8 @@ func processHeartBeat(c gnet.Conn, clientId engine.ConnectIdType) error {
 	if clientId == 0 {
 		return nil
 	}
-	now := time.Now().Unix()
 	_ = getGateProxy().SendToGate(engine.GenMessageHeader(engine.ServerMessageTypeHeartBeatRsp, clientId), nil, c)
-	engine.GetEntityManager().SetHeartbeat(ctx.serverName, clientId, now)
+	engine.GetEntityManager().SetHeartbeat(ctx.serverName, clientId)
 	return nil
 }
 

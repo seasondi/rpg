@@ -13,7 +13,7 @@ const entityIdTypeString = "int64" //entityId类型名
 const (
 	ServerTick          = 100 * time.Millisecond //服务器tick间隔
 	defaultSaveInterval = 5                      //自动存盘间隔, 单位: 分钟
-	heartbeatTick       = 3                      //心跳时间,单位：秒
+	HeartbeatTick       = 5                      //默认心跳时间,单位：秒
 )
 
 const (
