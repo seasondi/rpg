@@ -7,6 +7,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/panjf2000/gnet"
 	clientV3 "go.etcd.io/etcd/client/v3"
+	"math/rand"
 	"rpg/engine/engine"
 	"rpg/engine/message"
 	"sync"
@@ -401,6 +402,7 @@ func (m *gameProxy) sayHello(gameConn *engine.TcpClient) {
 	}
 	msg := &message.SayHello{
 		ServiceName: engine.ServiceName(),
+		Inner:       engine.GetConfig().Server.IsInner,
 	}
 	head := engine.GenMessageHeader(engine.ServerMessageTypeSayHello, 0)
 	if r, err := engine.GetProtocol().MessageWithHead(head, msg); err == nil {
@@ -430,12 +432,16 @@ func (m *gameProxy) sendHeartbeat(gameConn *engine.TcpClient, clientId engine.Co
 
 func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 	//todo:根据负载选择一个game
-	for _, info := range m.gameServers {
+	games := make([]string, 0)
+	for name, info := range m.gameServers {
 		if info.isStub == false && info.conn != nil {
-			return info.conn
+			games = append(games, name)
 		}
 	}
-	return nil
+	if len(games) == 0 {
+		return nil
+	}
+	return m.gameServers[games[rand.Intn(len(games))]].conn
 }
 
 func (m *gameProxy) getBindEntity(clientId engine.ConnectIdType) engine.EntityIdType {

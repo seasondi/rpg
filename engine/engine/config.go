@@ -51,6 +51,10 @@ type serverConfig struct {
 	Addr string `json:"addr,omitempty"` //服务器监听地址
 	//==============以上配置所有进程通用======================
 
+	//==============以下配置gate进程独有======================
+	IsInner bool `json:"inner,omitempty"` //是否为内部通信gate
+	//==============以下配置gate进程独有======================
+
 	//==============以下配置game进程独有======================
 	Telnet string `json:"telnet,omitempty"` //telnet监听地址
 	IsStub bool   `json:"stub,omitempty"`   //是否stub类型进程

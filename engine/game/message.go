@@ -29,7 +29,7 @@ func processSyncGate(buf []byte, c gnet.Conn) error {
 		return err
 	}
 	setCtxServiceName(c, msg.ServiceName)
-	getGateProxy().AddGate(msg.ServiceName, c)
+	getGateProxy().AddGate(c, msg.ServiceName, msg.Inner)
 	return nil
 }
 

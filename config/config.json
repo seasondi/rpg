@@ -1,6 +1,7 @@
 {
   "workPath": "./scripts",
   "serverId": 1001,
+  "printRpcLog": true,
   "logger": {
     "logLevel": "debug",
     "logPath": "./log",
@@ -24,6 +25,11 @@
   },
 
   "gate_1": {
+    "addr": "0.0.0.0:6000",
+    "inner": true
+  },
+
+  "gate_2": {
     "addr": "0.0.0.0:6300"
   },
 
@@ -37,6 +43,12 @@
   "game_2": {
     "addr": "0.0.0.0:6401",
     "telnet": "0.0.0.0:7001",
+    "db": "db_1"
+  },
+
+  "game_3": {
+    "addr": "0.0.0.0:6402",
+    "telnet": "0.0.0.0:7002",
     "db": "db_1"
   },
 

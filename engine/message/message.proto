@@ -37,6 +37,7 @@ message GameEntityRpc {
 //主动连接的一方将自己的服务名通知给对端
 message SayHello {
   string serviceName = 1;
+  bool inner = 2;
 }
 
 //game发往gate要求转发的消息

@@ -18,6 +18,7 @@ func initLogger() error {
 	logBase.SetLevel(strToLogLevel(cfg.Logger.LogLevel))
 	logBase.SetReportCaller(true)
 	log = logBase.WithFields(logrus.Fields{
+		"Name": ServiceName(),
 		//"Pid": os.Getpid(),
 	})
 	if cfg.Logger.JsonFormat {

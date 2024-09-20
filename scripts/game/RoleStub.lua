@@ -25,7 +25,7 @@ function RoleStub:entry(client, login_info)
     local account = login_info.account
     local password = login_info.password
 
-    if common.True(self.account_map[account]) then --有值说明账号已在登录了
+    if common.True(self.account_map[account]) and table.length(self.account_map[account]) > 0 then --有值说明账号已在登录了
         local account_id = self.account_map[account].account_id
         local avt_id = self.account_map[account].avatar_id
         if common.True(account_id) then -- account已创建
@@ -37,7 +37,7 @@ function RoleStub:entry(client, login_info)
         else --account没创建
             if common.True(avt_id) then --avatar没销毁掉,需排查
                 client:error(const.login_failed)
-            else -- avatar没创建
+            else -- 都没创建
                 client:error(const.account_is_logging)
             end
         end
@@ -96,7 +96,7 @@ function RoleStub:on_login(client, avtId, loginInfo)
 end
 
 function RoleStub:avatar_register(avt_id, account_id)
-    log.debug("avatar: ", avt_id, " register, account_id: ", account_id)
+    print("avatar: ", avt_id, " register, account_id: ", account_id, ", account_map: ", self.account_map)
     self.avatar_map[avt_id] = account_id
     local account = self.account_id_map[account_id]
     if account ~= nil then
@@ -112,7 +112,7 @@ function RoleStub:avatar_register(avt_id, account_id)
 end
 
 function RoleStub:avatar_unregister(avt_id)
-    log.debug("avatar: ", avt_id, " unregister")
+    print("avatar: ", avt_id, " unregister")
     local account_id = self.avatar_map[avt_id]
     self.avatar_map[avt_id] = nil
     if common.True(account_id) then
@@ -125,7 +125,7 @@ function RoleStub:avatar_unregister(avt_id)
 end
 
 function RoleStub:account_register(entity_id, account)
-    log.debug("account: ", entity_id, " register, login account: ", account)
+    print("account: ", entity_id, " register, login account: ", account, ", account_map: ", self.account_map)
     self.account_id_map[entity_id] = account
     if self.account_map[account] ~= nil then
         self.account_map[account].account_id = entity_id
@@ -137,7 +137,7 @@ function RoleStub:account_register(entity_id, account)
 end
 
 function RoleStub:account_unregister(entity_id)
-    log.debug("account: ", entity_id, "  unregister")
+    print("account: ", entity_id, "  unregister")
     local account = self.account_id_map[entity_id]
     if common.True(account) and common.True(self.account_map[account]) then
         self.account_map[account].account_id = nil

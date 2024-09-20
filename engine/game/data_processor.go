@@ -1,10 +1,10 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"container/list"
 	"fmt"
 	"github.com/panjf2000/gnet"
+	"rpg/engine/engine"
 	"sync"
 )
 
@@ -15,7 +15,7 @@ type task struct {
 	data     []byte
 }
 
-//gNet消息处理器
+// gNet消息处理器
 func getDataProcessor() *dataProcessor {
 	if dp == nil {
 		dp = new(dataProcessor)
@@ -58,18 +58,21 @@ func (m *dataProcessor) pop() *task {
 	return front.Value.(*task)
 }
 
-//处理网络接收的消息
+// 处理网络接收的消息
 func (m *dataProcessor) process() {
 	t := m.pop()
 	if t == nil {
 		return
 	}
-	c := getGateProxy().GetGateConn(t.gateName)
-	if c == nil {
-		return
-	}
+
 	ty, clientId, data, err := engine.ParseMessage(t.data)
 	if err != nil {
+		log.Errorf("process message parse error, addr: %s, err: %s", t.gateName, err.Error())
+		return
+	}
+	c := getGateProxy().GetGateConn(t.gateName)
+	if c == nil {
+		log.Warnf("process message but gate conn is nil, gate: %s, clientId: %d, messageType: %d", t.gateName, clientId, ty)
 		return
 	}
 	log.Tracef("type: %d, clientId: %d, data: %v", ty, clientId, data)

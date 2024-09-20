@@ -64,6 +64,7 @@ function gm:do_gm_command(jsonStr)
                 arg_list[idx] = val
             end
         end
+        print("call gm ", args.command, ", args: ", arg_list)
         return info.callback(table.unpack(arg_list))
     end
     return "无效的指令: " .. detail(args)

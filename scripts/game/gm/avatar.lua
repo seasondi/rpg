@@ -32,7 +32,11 @@ GMAvatar.kick_user = NewGMCommand("踢玩家下线", GMAuthorityDebug,
         GMEntityId()
 )
 GMAvatar.kick_user.callback = function(ent)
-    ent:destroy()
+    if ent.isAvatar then
+        ent:destroy()
+    else
+        return "非玩家ID"
+    end
 
     return "操作完成"
 end
