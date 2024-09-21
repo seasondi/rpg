@@ -26,8 +26,10 @@ func Init(st ServerType) error {
 	if err = initEtcd(); err != nil {
 		return err
 	}
-	if err = initRedis(); err != nil {
-		return err
+	if st == STGame || st == STGate || st == STRobot {
+		if err = initRedis(); err != nil {
+			return err
+		}
 	}
 	if err = initNetwork(); err != nil {
 		return err
@@ -115,7 +117,7 @@ func CanStopped() bool {
 	if entitiesNum == 0 && saveLen == 0 {
 		return true
 	}
-	log.Info("check can stop, left entities num: ", entitiesNum, ", left save num: ", saveLen)
+	//log.Info("check can stop, left entities num: ", entitiesNum, ", left save num: ", saveLen)
 	return false
 }
 

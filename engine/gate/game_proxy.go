@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gogo/protobuf/proto"
 	"github.com/panjf2000/gnet"
 	clientV3 "go.etcd.io/etcd/client/v3"
-	"math/rand"
 	"rpg/engine/engine"
 	"rpg/engine/message"
 	"sync"
@@ -85,19 +85,20 @@ type stubInfo struct {
 type serverInfo struct {
 	conn   *engine.TcpClient
 	isStub bool
+	load   *engine.GameLoadInfo
 }
 
 type gameProxy struct {
 	sync.Mutex
-	gameServers  map[string]serverInfo                                              //game server name -> serverInfo
-	stubEntities map[string]stubInfo                                                //stub entity name -> stubInfo
+	gameServers  map[string]*serverInfo                                             //game server name -> serverInfo
+	stubEntities map[string]*stubInfo                                               //stub entity name -> stubInfo
 	clientToGame map[engine.ConnectIdType]map[engine.EntityIdType]*engine.TcpClient //clientConnectId -> entityId-> TcpClient
 	entryStub    *stubInfo                                                          //入口stub
 }
 
 func (m *gameProxy) init() {
-	m.gameServers = make(map[string]serverInfo)
-	m.stubEntities = make(map[string]stubInfo)
+	m.gameServers = make(map[string]*serverInfo)
+	m.stubEntities = make(map[string]*stubInfo)
 	m.clientToGame = make(map[engine.ConnectIdType]map[engine.EntityIdType]*engine.TcpClient)
 }
 
@@ -127,7 +128,7 @@ func (m *gameProxy) HandleUpdateGame(key string, value engine.EtcdValue) {
 		gameConn := engine.NewTcpClient(engine.WithTcpClientCodec(handler), engine.WithTcpClientHandle(handler), engine.WithTcpClientContext(key))
 		isStub := false
 		isStub, ok = value[engine.EtcdValueIsStub].(bool)
-		m.gameServers[key] = serverInfo{
+		m.gameServers[key] = &serverInfo{
 			conn:   gameConn,
 			isStub: isStub,
 		}
@@ -169,7 +170,7 @@ func (m *gameProxy) HandleUpdateStub(key string, value engine.EtcdValue) {
 	}
 
 	si := stubInfo{serverName: serverName, entityId: entityId}
-	m.stubEntities[stubName] = si
+	m.stubEntities[stubName] = &si
 
 	if name, ok := value[engine.EtcdStubValueEntry].(string); ok && name == stubName {
 		m.entryStub = &si
@@ -191,7 +192,7 @@ func (m *gameProxy) HandleDeleteStub(key string) {
 
 	for name, stub := range m.stubEntities {
 		if stub.entityId == entityId {
-			if m.entryStub == &stub {
+			if m.entryStub == stub {
 				m.entryStub = nil
 			}
 			delete(m.stubEntities, name)
@@ -431,17 +432,50 @@ func (m *gameProxy) sendHeartbeat(gameConn *engine.TcpClient, clientId engine.Co
 }
 
 func (m *gameProxy) getGameByLoad() *engine.TcpClient {
-	//todo:根据负载选择一个game
-	games := make([]string, 0)
-	for name, info := range m.gameServers {
-		if info.isStub == false && info.conn != nil {
-			games = append(games, name)
+	now := time.Now()
+	var minGameLoad *engine.GameLoadInfo
+	for _, info := range m.gameServers {
+		log.Debug("%+v", info.load)
+		if info.isStub == false && info.load != nil {
+			if info.load.Time.IsZero() || now.Sub(info.load.Time) > time.Minute {
+				continue
+			}
+			if minGameLoad == nil {
+				minGameLoad = info.load
+			} else {
+				if minGameLoad.EntityCount < info.load.EntityCount {
+					minGameLoad = info.load
+				} else if minGameLoad.EntityCount == info.load.EntityCount {
+					if minGameLoad.Time.After(info.load.Time) {
+						minGameLoad = info.load
+					}
+				}
+			}
 		}
 	}
-	if len(games) == 0 {
+	if minGameLoad == nil {
 		return nil
 	}
-	return m.gameServers[games[rand.Intn(len(games))]].conn
+	return m.gameServers[minGameLoad.Name].conn
+}
+
+func (m *gameProxy) updateGameLoadInfo() {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if r, err := engine.GetRedisMgr().HGetAll(ctx, engine.RedisHashGameLoad); err != nil {
+		log.Warnf("update game load info, get from redis error: %s", err.Error())
+	} else {
+		for name, v := range r {
+			data := &engine.GameLoadInfo{}
+			if err = json.Unmarshal([]byte(v), &data); err == nil {
+				m.Lock()
+				if server, ok := m.gameServers[name]; ok {
+					server.load = data
+				}
+				m.Unlock()
+			}
+		}
+	}
 }
 
 func (m *gameProxy) getBindEntity(clientId engine.ConnectIdType) engine.EntityIdType {

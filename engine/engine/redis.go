@@ -10,6 +10,16 @@ import (
 	"time"
 )
 
+const (
+	RedisHashGameLoad = "GameLoad" //game负载
+)
+
+type GameLoadInfo struct {
+	Name        string
+	EntityCount int
+	Time        time.Time
+}
+
 func GetRedisMgr() *redisManager {
 	return redisMgr
 }
@@ -120,7 +130,7 @@ func (m *redisManager) HMSet(ctx context.Context, key string, fields map[string]
 	}
 }
 
-//HGetAll 即使hash不存在,err也是nil
+// HGetAll 即使hash不存在,err也是nil
 func (m *redisManager) HGetAll(ctx context.Context, key string) (map[string]string, error) {
 	if err := m.checkRedis(); err != nil {
 		return map[string]string{}, err
@@ -271,6 +281,28 @@ func (m *redisManager) SetNX(ctx context.Context, key string, val interface{}, e
 		return m.clusterClient.SetNX(ctx, key, val, expire).Result()
 	} else {
 		return m.aloneClient.SetNX(ctx, key, val, expire).Result()
+	}
+}
+
+func (m *redisManager) Publish(ctx context.Context, channel string, message interface{}) error {
+	if err := m.checkRedis(); err != nil {
+		return err
+	}
+	if m.clusterClient != nil {
+		return m.clusterClient.Publish(ctx, channel, message).Err()
+	} else {
+		return m.aloneClient.Publish(ctx, channel, message).Err()
+	}
+}
+
+func (m *redisManager) Subscribe(ctx context.Context, channel string) (*redis.PubSub, error) {
+	if err := m.checkRedis(); err != nil {
+		return nil, err
+	}
+	if m.clusterClient != nil {
+		return m.clusterClient.Subscribe(ctx, channel), nil
+	} else {
+		return m.aloneClient.Subscribe(ctx, channel), nil
 	}
 }
 

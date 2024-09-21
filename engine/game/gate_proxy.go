@@ -86,40 +86,43 @@ func (m *gateProxy) GateName(c gnet.Conn) string {
 	return m.gateConnMap[c]
 }
 
+func (m *gateProxy) choseGate() string {
+	gateNames := make([]string, 0)
+	for name, info := range m.gateMap {
+		if info.isInnerGate {
+			gateNames = append(gateNames, name)
+		}
+	}
+	//没有inner gate
+	if len(gateNames) == 0 {
+		for name := range m.gateMap {
+			gateNames = append(gateNames, name)
+		}
+	}
+
+	if len(gateNames) > 0 {
+		return gateNames[rand.Intn(len(gateNames))]
+	}
+
+	return ""
+}
+
 func (m *gateProxy) GetInnerGate() gnet.Conn {
 	m.gateMapLock.Lock()
 	defer m.gateMapLock.Unlock()
-
-	//选取一个内部通信gate,确保同一个game进程的消息顺序性, 连接断开前不改变
-	choseGate := func() string {
-		gateNames := make([]string, 0)
-		for name, info := range m.gateMap {
-			if info.isInnerGate {
-				gateNames = append(gateNames, name)
-			}
-		}
-		//没有inner gate
-		if len(gateNames) == 0 {
-			for name := range m.gateMap {
-				gateNames = append(gateNames, name)
-			}
-		}
-
-		if len(gateNames) > 0 {
-			return gateNames[rand.Intn(len(gateNames))]
-		}
-
-		return ""
-	}
 
 	if m.chosenInnerGate != "" {
 		if info, find := m.gateMap[m.chosenInnerGate]; find && info.conn != nil {
 			return info.conn
 		} else {
-			m.chosenInnerGate = choseGate()
+			m.chosenInnerGate = m.choseGate()
 		}
 	} else {
-		m.chosenInnerGate = choseGate()
+		m.chosenInnerGate = m.choseGate()
+	}
+
+	if m.chosenInnerGate == "" {
+		return nil
 	}
 
 	return m.gateMap[m.chosenInnerGate].conn

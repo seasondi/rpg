@@ -6,7 +6,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 	"go.uber.org/atomic"
 	"rpg/engine/engine"
-	"time"
 )
 
 const (
@@ -43,16 +42,12 @@ func checkStopServer() bool {
 	switch quit.Load() {
 	case quitStatusBeginQuit:
 		log.Info("server start quit")
-		engine.GetConfig().SaveNumPerTick = 50 //加快存盘速度
+		engine.GetConfig().SaveNumPerTick += 5 //加快存盘速度
 		_ = engine.CallLuaMethodByName(engine.GetGlobalEntry(), "stop_server", 0)
 		quit.Store(quitStatusQuiting)
 	case quitStatusQuiting:
-		now := time.Now().Unix()
-		if now-lastQuittingCheckTime >= 2 {
-			lastQuittingCheckTime = now
-			if engine.CanStopped() {
-				quit.Store(quitStatusQuited)
-			}
+		if engine.CanStopped() {
+			quit.Store(quitStatusQuited)
 		}
 	case quitStatusQuited:
 		log.Info("server quit success")

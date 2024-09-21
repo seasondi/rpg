@@ -303,9 +303,6 @@ func (em *entityManager) RemoveGateEntitiesConn(gateName string) {
 	}
 }
 
-func (em *entityManager) EntityIsLoaded(entityName string) bool {
-	if _, find := em.metas[entityName]; find {
-		return true
-	}
-	return false
+func (em *entityManager) GetEntityCount() int {
+	return len(em.allEntities)
 }

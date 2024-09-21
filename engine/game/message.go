@@ -63,6 +63,7 @@ func processEntityRpc(buf []byte) error {
 	if method, ok := params[0].(string); !ok {
 		return errors.New("invalid method name")
 	} else {
+		log.Tracef("call %s server method: %s, is from server: %v", ent.String(), method, msg.FromServer)
 		args := engine.InterfaceToLValues(params[1:])
 		if !msg.FromServer {
 			args = append([]lua.LValue{lua.LNumber(entityId)}, args...)
@@ -71,7 +72,6 @@ func processEntityRpc(buf []byte) error {
 			log.Warnf("call %s method[%s] error: %s", ent.String(), method, err.Error())
 			return nil
 		}
-		log.Tracef("call %s server method: %s, is from server: %v", ent.String(), method, msg.FromServer)
 	}
 
 	return nil

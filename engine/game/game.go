@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"github.com/panjf2000/gnet"
 	"rpg/engine/engine"
 	"runtime"
@@ -24,6 +26,21 @@ func (m *eventLoop) startTick() {
 	}
 }
 
+func (m *eventLoop) reportLoad() {
+	for {
+		data := engine.GameLoadInfo{
+			Name:        engine.ServiceName(),
+			EntityCount: engine.GetEntityManager().GetEntityCount(),
+			Time:        time.Now(),
+		}
+		info, _ := json.Marshal(data)
+		if err := engine.GetRedisMgr().HSet(context.Background(), engine.RedisHashGameLoad, engine.ServiceName(), info); err != nil {
+			log.Warnf("hset to redis hash: %s, error: %s", engine.RedisHashGameLoad, err.Error())
+		}
+		time.Sleep(time.Second)
+	}
+}
+
 func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	engine.GetServerStep().Start()
 	for !engine.GetServerStep().Completed() {
@@ -41,6 +58,7 @@ func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	}
 
 	go m.startTick()
+	go m.reportLoad()
 	return gnet.None
 }
 
@@ -78,10 +96,4 @@ func (m *eventLoop) serverTick() time.Duration {
 		return -1
 	}
 	return engine.ServerTick
-}
-
-func genCloseClientMessage(clientId engine.ConnectIdType) []byte {
-	header := engine.GenMessageHeader(engine.ServerMessageTypeDisconnectClient, clientId)
-	buf, _ := engine.GetProtocol().MessageWithHead(header, nil)
-	return buf
 }

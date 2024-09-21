@@ -106,3 +106,9 @@ func (m *dataProcessor) process() {
 		}
 	}
 }
+
+func genCloseClientMessage(clientId engine.ConnectIdType) []byte {
+	header := engine.GenMessageHeader(engine.ServerMessageTypeDisconnectClient, clientId)
+	buf, _ := engine.GetProtocol().MessageWithHead(header, nil)
+	return buf
+}

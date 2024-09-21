@@ -475,6 +475,7 @@ func (e *entity) setClient(c *ClientMailBox, primary bool) error {
 			log.Infof("add destroy timer for %s, timer id: %d", e.String(), e.destroyTimerId)
 		}
 	}
+
 	if c == nil {
 		e.onLoseClient()
 		e.client = nil
@@ -485,6 +486,7 @@ func (e *entity) setClient(c *ClientMailBox, primary bool) error {
 			e.addCheckHeartbeatTimer()
 		}
 	}
+	log.Infof("%s conn info set to %+v", e.String(), e.client)
 	if e.client != nil {
 		if e.destroyTimerId > 0 {
 			e.cancelEntityTimer(e.destroyTimerId)
@@ -505,7 +507,6 @@ func (e *entity) setClient(c *ClientMailBox, primary bool) error {
 			}
 		}
 	}
-	log.Infof("%s conn info set to %+v", e.String(), e.client)
 	return nil
 }
 
@@ -527,14 +528,15 @@ func (e *entity) createClientEntity() error {
 	if e.client == nil {
 		return fmt.Errorf("%s createClientEntity but client nil", e.String())
 	}
-	props := make(map[string]interface{})
-	for name, prop := range e.def.properties {
-		if prop.config.IsSyncProp() {
-			val := luaL.GetField(e.propsTable, name)
-			props[name] = prop.dt.ParseFromLua(val)
-		}
-	}
-	args := []interface{}{e.entityName, props}
+	//props := make(map[string]interface{})
+	//for name, prop := range e.def.properties {
+	//	if prop.config.IsSyncProp() {
+	//		val := luaL.GetField(e.propsTable, name)
+	//		props[name] = prop.dt.ParseFromLua(val)
+	//	}
+	//}
+	//args := []interface{}{e.entityName, props}
+	args := []interface{}{e.entityName}
 	msg := map[string]interface{}{
 		ClientMsgDataFieldType:     ClientMsgTypeCreateEntity,
 		ClientMsgDataFieldEntityID: e.entityId,
@@ -542,6 +544,8 @@ func (e *entity) createClientEntity() error {
 	}
 	if data, err := genEntityRpcMessage(uint8(ServerMessageTypeEntityRpc), msg, e.client.mailbox.ClientId); err == nil {
 		e.client.mailbox.Send(data)
+		log.Debugf("ask client create entity, entityId: %d, entityName: %s, clientId: %d, dataLen: %d",
+			e.entityId, e.entityName, e.client.mailbox.ClientId, len(data))
 		return nil
 	} else {
 		return err

@@ -36,14 +36,24 @@ func (m *systemSignal) init() {
 }
 
 func stopServer() {
+	lastLogTime := time.Now()
 	for num := dbMgr.TaskMgr.TaskSize(); num > 0; num = dbMgr.TaskMgr.TaskSize() {
-		log.Info("buffed task still has ", num, " tasks")
-		time.Sleep(2 * time.Second)
+		time.Sleep(100 * time.Millisecond)
+
+		if time.Since(lastLogTime).Seconds() >= 5 {
+			log.Info("buffed task still has ", num, " tasks")
+			lastLogTime = time.Now()
+		}
 	}
 	dbMgr.TaskPool.Release()
 	for num := dbMgr.TaskPool.Running(); num > 0; num = dbMgr.TaskPool.Running() {
-		log.Info("task pool still has ", num, " running goroutines")
-		time.Sleep(2 * time.Second)
+		//log.Info("task pool still has ", num, " running goroutines")
+		time.Sleep(100 * time.Millisecond)
+
+		if time.Since(lastLogTime).Seconds() >= 5 {
+			log.Info("buffed task still has ", num, " tasks")
+			lastLogTime = time.Now()
+		}
 	}
 	log.Infof("server quit success")
 	_ = gnet.Stop(context.TODO(), engine.ListenProtoAddr())

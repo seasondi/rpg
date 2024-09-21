@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/panjf2000/gnet"
 	"rpg/engine/engine"
 	"rpg/engine/message"
-	"github.com/panjf2000/gnet"
 )
 
 func responseHeartBeatToClient(clientConn gnet.Conn) {
@@ -15,7 +15,7 @@ func responseHeartBeatToClient(clientConn gnet.Conn) {
 	}
 }
 
-//processHeartBeatResponse 处理心跳回包
+// processHeartBeatResponse 处理心跳回包
 func processHeartBeatResponse(_ *engine.TcpClient, clientId engine.ConnectIdType) error {
 	if clientId > 0 {
 		if clientConn := getClientProxy().client(clientId); clientConn != nil {
@@ -25,16 +25,18 @@ func processHeartBeatResponse(_ *engine.TcpClient, clientId engine.ConnectIdType
 	return nil
 }
 
-//processGameRpc rpc消息发给客户端
+// processGameRpc rpc消息发给客户端
 func processGameRpc(_ *engine.TcpClient, clientId engine.ConnectIdType, buf []byte) error {
 	if clientConn := getClientProxy().client(clientId); clientConn != nil {
 		_ = clientConn.AsyncWrite(buf)
+	} else {
+		log.Warnf("process game rpc but client not found, clientId: %d", clientId)
 	}
 
 	return nil
 }
 
-//processRouterMessage 内部转发消息发给目标game的entity消息
+// processRouterMessage 内部转发消息发给目标game的entity消息
 func processRouterMessage(_ *engine.TcpClient, buf []byte) error {
 	msg := message.GameRouterRpc{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -58,7 +60,7 @@ func processRouterMessage(_ *engine.TcpClient, buf []byte) error {
 	return nil
 }
 
-//processDisconnectClient 断开客户端连接
+// processDisconnectClient 断开客户端连接
 func processDisconnectClient(_ *engine.TcpClient, clientId engine.ConnectIdType) error {
 	clientConn := getClientProxy().client(clientId)
 	if clientConn == nil {
@@ -69,7 +71,7 @@ func processDisconnectClient(_ *engine.TcpClient, clientId engine.ConnectIdType)
 	return nil
 }
 
-//processCreateEntity 根据负载选择game创建entity
+// processCreateEntity 根据负载选择game创建entity
 func processCreateEntity(_ *engine.TcpClient, buf []byte) error {
 	msg := message.CreateEntityRequest{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -88,7 +90,7 @@ func processCreateEntity(_ *engine.TcpClient, buf []byte) error {
 	return nil
 }
 
-//processCreateEntityResponse 创建entity结果通知给请求的game进程
+// processCreateEntityResponse 创建entity结果通知给请求的game进程
 func processCreateEntityResponse(_ *engine.TcpClient, buf []byte) error {
 	msg := message.CreateEntityResponse{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -105,7 +107,7 @@ func processCreateEntityResponse(_ *engine.TcpClient, buf []byte) error {
 	return nil
 }
 
-//processLoginByOther 通知前个连接被顶号
+// processLoginByOther 通知前个连接被顶号
 func processLoginByOther(_ *engine.TcpClient, clientId engine.ConnectIdType) error {
 	if clientConn := getClientProxy().client(clientId); clientConn != nil {
 		_ = clientConn.AsyncWrite(genServerErrorMessage(engine.ErrMsgLoginByOther))
@@ -114,7 +116,7 @@ func processLoginByOther(_ *engine.TcpClient, clientId engine.ConnectIdType) err
 	return nil
 }
 
-//服务器通知错误信息
+// 服务器通知错误信息
 func processServerError(_ *engine.TcpClient, clientId engine.ConnectIdType, buf []byte) error {
 	msg := message.ServerError{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -126,7 +128,7 @@ func processServerError(_ *engine.TcpClient, clientId engine.ConnectIdType, buf 
 	return nil
 }
 
-//entity与客户端连接绑定
+// entity与客户端连接绑定
 func processEntityBindClient(game *engine.TcpClient, buf []byte) error {
 	msg := message.ClientBindEntity{}
 	if err := msg.Unmarshal(buf); err != nil {
@@ -141,7 +143,7 @@ func processEntityBindClient(game *engine.TcpClient, buf []byte) error {
 	return nil
 }
 
-//processSetServerTime 设置服务器时间
+// processSetServerTime 设置服务器时间
 func processSetServerTime(_ *engine.TcpClient, buf []byte) error {
 	msg := message.SetServerTimeOffset{}
 	if err := msg.Unmarshal(buf); err != nil {
