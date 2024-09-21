@@ -26,7 +26,7 @@ func Init(st ServerType) error {
 	if err = initEtcd(); err != nil {
 		return err
 	}
-	if st == STGame || st == STGate || st == STRobot {
+	if st != STDbMgr {
 		if err = initRedis(); err != nil {
 			return err
 		}

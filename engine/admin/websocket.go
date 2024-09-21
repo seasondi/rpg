@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/websocket"
-	"net"
 	"net/http"
 	"sync"
 )
 
-var serverConn map[string]*net.TCPConn
+var serverConn sync.Map
 
 type messageProcessor func(ws *webSocketConnection, req *webSocketMessage) (*webSocketMessage, error)
 

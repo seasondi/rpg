@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"html/template"
-	"net"
 	"net/http"
 	"rpg/engine/engine"
+	"time"
 )
 
 var log *logrus.Entry
@@ -41,6 +41,16 @@ func StartWebSocket() {
 	_ = http.ListenAndServe(":9000", nil)
 }
 
+func tick() {
+	for {
+		serverConn.Range(func(k, v interface{}) bool {
+			v.(*engine.TcpClient).Tick()
+			return true
+		})
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
 func main() {
 	if err := engine.Init(engine.STAdmin); err != nil {
 		fmt.Println("engine init error: ", err.Error())
@@ -49,8 +59,7 @@ func main() {
 	log = engine.GetLogger()
 	defer engine.Close()
 
-	serverConn = make(map[string]*net.TCPConn)
-
+	go tick()
 	go StartWebConsole()
 	StartWebSocket()
 }

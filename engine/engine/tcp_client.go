@@ -10,10 +10,9 @@ import (
 )
 
 const (
-	connectStatusDisconnected  = 0
-	connectStatusConnecting    = 1
-	connectStatusConnected     = 2
-	connectStatusDisconnecting = 3
+	connectStatusDisconnected = 0
+	connectStatusConnecting   = 1
+	connectStatusConnected    = 2
 )
 
 const (
@@ -26,6 +25,10 @@ const (
 	handlerActionNone         = 0
 	handlerActionConnected    = 1
 	handlerActionDisconnected = 2
+)
+
+const (
+	autoReconnectRetryTimes = 60
 )
 
 type ITcpClientHandler interface {
@@ -96,19 +99,20 @@ func NewTcpClient(opts ...Option) *TcpClient {
 }
 
 type TcpClient struct {
-	inBufferLock  sync.Mutex
-	inBuffer      *RingBuffer.RingBuffer
-	outBufferLock sync.Mutex
-	outBuffer     *RingBuffer.RingBuffer
-	conn          *net.TCPConn
-	codec         ITcpClientCodec
-	handler       ITcpClientHandler
-	ctx           interface{}
-	addr          string
-	connAction    atomic.Int32
-	connectStatus atomic.Int32
-	handlerAction atomic.Int32
-	autoReconnect bool
+	inBufferLock   sync.Mutex
+	inBuffer       *RingBuffer.RingBuffer
+	outBufferLock  sync.Mutex
+	outBuffer      *RingBuffer.RingBuffer
+	conn           *net.TCPConn
+	codec          ITcpClientCodec
+	handler        ITcpClientHandler
+	ctx            interface{}
+	addr           string
+	connAction     atomic.Int32
+	connectStatus  atomic.Int32
+	handlerAction  atomic.Int32
+	autoReconnect  bool
+	reconnectTimes atomic.Int32
 }
 
 func (m *TcpClient) init(opts ...Option) {
@@ -141,7 +145,7 @@ func (m *TcpClient) loadOptions(options ...Option) *Options {
 	return opts
 }
 
-func (m *TcpClient) recv() {
+func (m *TcpClient) receive() {
 	for {
 		buf := make([]byte, 2048)
 		//read blocks until data comes
@@ -199,7 +203,7 @@ func (m *TcpClient) connect() error {
 
 	m.connectStatus.Store(connectStatusConnected)
 	m.handlerAction.Store(handlerActionConnected)
-	go m.recv()
+	go m.receive()
 
 	return nil
 }
@@ -209,17 +213,8 @@ func (m *TcpClient) Connect(addr string, autoReconnect bool) {
 	m.autoReconnect = autoReconnect
 
 	go func() {
-		if m.autoReconnect {
-			tryTimes := 0
-			for err := m.connect(); err != nil && tryTimes < 60; err = m.connect() {
-				tryTimes += 1
-				log.Warnf("connect to %s error: %s, tryTimes: %d", addr, err.Error(), tryTimes)
-				time.Sleep(5 * time.Second)
-			}
-		} else {
-			if err := m.connect(); err != nil {
-				log.Warnf("connect to %s error: %s", addr, err.Error())
-			}
+		if err := m.connect(); err != nil {
+			log.Warnf("connect to %s error: %s", addr, err.Error())
 		}
 	}()
 }
@@ -241,8 +236,8 @@ func (m *TcpClient) Status() int32 {
 }
 
 func (m *TcpClient) Send(buf []byte) (int, error) {
-	if m.conn == nil {
-		return 0, errors.New("connection is nil")
+	if m.IsDisconnected() {
+		return 0, errors.New("disconnect")
 	}
 	data, err := m.codec.Encode(buf)
 	if err != nil {
@@ -253,8 +248,22 @@ func (m *TcpClient) Send(buf []byte) (int, error) {
 	return m.outBuffer.Write(data)
 }
 
+func (m *TcpClient) WriteBuf(buf []byte) (int, error) {
+	data, err := m.codec.Encode(buf)
+	if err != nil {
+		return 0, err
+	}
+	m.outBufferLock.Lock()
+	defer m.outBufferLock.Unlock()
+	return m.outBuffer.Write(data)
+}
+
 func (m *TcpClient) Tick() {
-	if m.conn == nil {
+	if m.IsDisconnected() {
+		if m.autoReconnect && m.connAction.Load() != connActionReconnect {
+			m.connAction.Store(connActionReconnect)
+			m.doConnAction()
+		}
 		return
 	}
 
@@ -310,6 +319,7 @@ func (m *TcpClient) doAction() {
 func (m *TcpClient) doHandlerAction() {
 	switch m.handlerAction.Load() {
 	case handlerActionConnected:
+		m.reconnectTimes.Store(0)
 		m.handler.OnConnect(m)
 	case handlerActionDisconnected:
 		m.handler.OnDisconnect(m)
@@ -319,27 +329,38 @@ func (m *TcpClient) doHandlerAction() {
 
 func (m *TcpClient) doConnAction() {
 	action := m.connAction.Load()
-	if action == connActionReconnect || action == connActionClose {
-		connectStatus := m.connectStatus.Load()
-		if connectStatus != connectStatusDisconnecting && connectStatus != connectStatusDisconnected {
-			m.connectStatus.Store(connectStatusDisconnecting)
-
-			m.inBufferLock.Lock()
-			m.inBuffer.Reset()
-			m.inBufferLock.Unlock()
-
-			m.outBufferLock.Lock()
-			m.outBuffer.Reset()
-			m.outBufferLock.Unlock()
-
-			_ = m.conn.Close()
-			m.connectStatus.Store(connectStatusDisconnected)
-			m.handlerAction.Store(handlerActionDisconnected)
-		}
-		if action == connActionReconnect {
-			m.Connect(m.addr, m.autoReconnect)
-		}
+	if action == connActionNone {
+		return
 	}
-	m.connAction.Store(connActionNone)
-	m.doHandlerAction()
+
+	if m.conn != nil {
+		_ = m.conn.Close()
+	}
+
+	if m.connectStatus.Load() == connectStatusConnected {
+		m.connectStatus.Store(connectStatusDisconnected)
+		m.handlerAction.Store(handlerActionDisconnected)
+		m.doHandlerAction()
+	}
+
+	if action == connActionReconnect {
+		go func() {
+			for {
+				if m.reconnectTimes.Load() < autoReconnectRetryTimes {
+					m.reconnectTimes.Add(1)
+					if err := m.connect(); err != nil {
+						log.Warnf("connect to %s error: %s", m.addr, err.Error())
+						time.Sleep(5 * time.Second)
+					} else {
+						m.connAction.Store(connActionNone)
+						return
+					}
+				} else {
+					return
+				}
+			}
+		}()
+	} else {
+		m.connAction.Store(connActionNone)
+	}
 }

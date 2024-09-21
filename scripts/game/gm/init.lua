@@ -57,7 +57,7 @@ function gm:do_gm_command(jsonStr)
             if arg.index == "entity_id" then
                 local ent = rpg.entities[val]
                 if ent == nil then
-                    return string.format("entity[%s] not found", val)
+                    return string.format("entity not found, entityId: %s", val)
                 end
                 arg_list[idx] = ent
             else

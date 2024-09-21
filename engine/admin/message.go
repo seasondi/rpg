@@ -9,16 +9,18 @@ import (
 	clientV3 "go.etcd.io/etcd/client/v3"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"rpg/engine/engine"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 )
 
 const exportTableConfigFile = "./config/export_table_config.txt"
+
+var commandResponseChan = make(chan string)
 
 func dispatcher(ws *webSocketConnection, req *webSocketMessage) (*webSocketMessage, error) {
 	switch req.Type {
@@ -44,27 +46,42 @@ func dispatcher(ws *webSocketConnection, req *webSocketMessage) (*webSocketMessa
 	return nil, errors.New("unknown message type")
 }
 
-func connectTarget(_ *webSocketConnection, target string) *net.TCPConn {
+func connectTarget(_ *webSocketConnection, target string) *engine.TcpClient {
 	//target格式: game.1001.1
-	conn := serverConn[target]
+	conn, _ := serverConn.Load(target)
 	if conn == nil {
 		info := strings.Split(target, ".")
 		if len(info) >= 3 {
 			name := info[0] + "_" + info[2]
-			if config := engine.GetConfig().GetServerConfigByName(name); config != nil {
-				if tcpAddr, err := net.ResolveTCPAddr("tcp", config.Telnet); err == nil {
-					if conn, err = net.DialTCP("tcp", nil, tcpAddr); err == nil {
-						_ = conn.SetKeepAlive(true)
-						serverConn[target] = conn
-					}
-				}
+			if config := engine.GetConfig().GetServerConfigByName(name); config != nil && config.Telnet != "" {
+				h := &adminHandler{}
+				client := engine.NewTcpClient(engine.WithTcpClientHandle(h), engine.WithTcpClientCodec(h), engine.WithTcpClientContext(target))
+				conn = client
+				client.Connect(config.Telnet, false)
+				serverConn.Store(target, client)
 			}
 		}
 	}
-	return conn
+	return conn.(*engine.TcpClient)
 }
 
-func sendCommandToTarget(ws *webSocketConnection, ty int, target string, command string, retry ...bool) string {
+func getTypeName(ty int) string {
+	switch ty {
+	case 1:
+		return "CONSOLE"
+	case 2:
+		return "GET_GM_LIST"
+	case 3:
+		return "GM_CMD"
+	case 4:
+		return "HOTFIX"
+	default:
+		return strconv.FormatInt(int64(ty), 10)
+	}
+}
+
+func sendCommandToTarget(ws *webSocketConnection, ty int, target string, command string) string {
+	log.Infof("[GM]send %s command: %s to target: %s", getTypeName(ty), command, target)
 	conn := connectTarget(ws, target)
 	response := ""
 	if conn == nil {
@@ -75,18 +92,16 @@ func sendCommandToTarget(ws *webSocketConnection, ty int, target string, command
 			Data: strings.ReplaceAll(command, "\n", "\t"),
 		}
 		data, _ := json.Marshal(msg)
-		if _, err := conn.Write([]byte(string(data) + "\n")); err != nil {
-			delete(serverConn, target)
-			if len(retry) == 0 {
-				return sendCommandToTarget(ws, ty, target, command, true)
-			} else {
-				return err.Error()
-			}
+		if _, err := conn.WriteBuf([]byte(string(data) + "\n")); err != nil {
+			serverConn.Delete(target)
+			return err.Error()
 		} else {
-			buf := make([]byte, 2048)
-			_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
-			n, _ := conn.Read(buf)
-			response = strings.TrimRight(string(buf[:n]), "\r\n")
+			select {
+			case r := <-commandResponseChan:
+				response = strings.TrimRight(r, "\r\n")
+			case <-time.After(5 * time.Second):
+				response = "timeout"
+			}
 		}
 	}
 	return response
@@ -155,6 +170,8 @@ func onGMCommand(ws *webSocketConnection, req *webSocketMessage) (*webSocketMess
 				if target, ok := result[engine.EtcdValueServer].(string); ok {
 					targetServer = target
 				}
+			} else {
+				log.Warnf("get entity: %d from redis error: %s", entityId, err.Error())
 			}
 		} else {
 			results := engine.GetEtcd().Get(ctx, engine.StubPrefix, clientV3.WithPrefix())

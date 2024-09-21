@@ -41,11 +41,6 @@ if __name__ == "__main__":
 
     all_thread = []
 
-#     global games
-#     global gates
-#     global dbs
-#     global admins
-
     for info in servers:
         for i in range(0, info[1]):
             target = info[0] + ".exe"
