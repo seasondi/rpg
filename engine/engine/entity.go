@@ -3,7 +3,6 @@ package engine
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	lua "github.com/yuin/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
@@ -61,14 +60,6 @@ func NewEntity(entityId EntityIdType, entityName string) (*entity, error) {
 }
 
 func (e *entity) init() error {
-	scriptPath := getLuaEntryValue("scriptPath")
-	if scriptPath.Type() == lua.LTNil {
-		log.Warn(globalEntry + ".scriptPath is necessary, please set in script(relative path to \"WorkPath\" defined in config)")
-		return errors.New("scriptPath not defined")
-	}
-
-	isEntityLoaded := GetEntityManager().EntityIsLoaded(e.entityName)
-
 	e.activeTimerIds = make(map[int64]bool)
 	e.luaEntity = luaL.NewTable()
 	luaL.SetMetatable(e.luaEntity, GetEntityManager().genMetaTable(e.entityName))
@@ -77,14 +68,6 @@ func (e *entity) init() error {
 	e.def = defMgr.GetEntityDef(e.entityName)
 	if e.def == nil {
 		return fmt.Errorf("cannot find entity[%s] def, please check entities.xml", e.entityName)
-	}
-	if !isEntityLoaded {
-		if err := e.def.loadInterfaceFiles(); err != nil {
-			return err
-		}
-		if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + e.entityName + ".lua"); err != nil {
-			return err
-		}
 	}
 	GetEntityManager().registerEntity(e)
 	e.def.registerToEntity(e)
@@ -162,7 +145,7 @@ func (e *entity) registerSelf() error {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
 		info, _ := json.Marshal(val)
-		if err := GetRedisMgr().Set(ctx, GetEtcdEntityKey(e.entityId), info, 0); err != nil {
+		if err := GetRedisMgr().Set(ctx, GetRedisEntityKey(e.entityId), info, 0); err != nil {
 			log.Errorf("put %s to redis error: %s", e.String(), err.Error())
 			return err
 		}
@@ -175,7 +158,7 @@ func (e *entity) removeRegisterInfo() {
 	{
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
-		if err := GetRedisMgr().Del(ctx, GetEtcdEntityKey(e.entityId)); err != nil {
+		if err := GetRedisMgr().Del(ctx, GetRedisEntityKey(e.entityId)); err != nil {
 			log.Errorf("remove %s from redis error: %s", e.String(), err.Error())
 		}
 	}
@@ -198,7 +181,7 @@ func (e *entity) final() {
 	e.removeRegisterInfo()
 	e.status = EntityDestroyed
 	clearEntitySaveID(e.entityId)
-	log.Debugf("%s destroy success", e.String())
+	log.Infof("%s destroy success", e.String())
 }
 
 func (e *entity) Status() EntityStatus {
@@ -206,7 +189,7 @@ func (e *entity) Status() EntityStatus {
 }
 
 func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
-	log.Debugf("%s destroy. status: %d, isSaveDB: %v, needSaveDB: %v, immediately: %v", e.String(), e.status, isSaveDB, e.def.volatile.persistent, destroyImmediately)
+	log.Infof("%s destroy. status: %d, isSaveDB: %v, needSaveDB: %v, immediately: %v", e.String(), e.status, isSaveDB, e.def.volatile.persistent, destroyImmediately)
 	if e.status == EntityDestroyed || e.status == EntityWaitDestroy {
 		return
 	} else if e.status == EntityDestroying {
@@ -225,9 +208,9 @@ func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 		e.cancelAllTimers()
 	}
 
-	var mb *ClientMailBox
+	//var mb *ClientMailBox
 	if e.client != nil {
-		mb = &e.client.mailbox
+		//mb = &e.client.mailbox
 		_ = e.setClient(nil, e.client.primary)
 	}
 	e.status = EntityWaitDestroy
@@ -252,20 +235,23 @@ func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 	}
 
 	//销毁该连接关联的所有其他entity
-	if mb != nil {
-		for _, entityId := range GetEntityManager().GetEntitiesByConn(mb) {
-			if entityId != e.entityId {
-				if ent := GetEntityManager().GetEntityById(entityId); ent != nil {
-					ent.Destroy(isSaveDB, destroyImmediately)
-				}
-			}
-		}
-	}
+	//if mb != nil {
+	//	for _, entityId := range GetEntityManager().GetEntitiesByConn(mb) {
+	//		if entityId != e.entityId {
+	//			if ent := GetEntityManager().GetEntityById(entityId); ent != nil {
+	//				ent.Destroy(isSaveDB, destroyImmediately)
+	//			}
+	//		}
+	//	}
+	//}
 }
 
 func (e *entity) SavedOnDestroyCallback() {
-	_ = CallLuaMethodByName(e.luaEntity, onEntityFinal, 0, e.luaEntity)
-	e.final()
+	//存盘过程中又建立了连接
+	if e.client == nil {
+		_ = CallLuaMethodByName(e.luaEntity, onEntityFinal, 0, e.luaEntity)
+		e.final()
+	}
 }
 
 func (e *entity) GetEntityId() EntityIdType {
@@ -443,7 +429,11 @@ primary: entity是否是该连接的主entity, 只有主entity连接信息变化
 (一个连接可绑定给多个entity,这些entity之间应当属于同个玩家,如account+avatar,只能有一个entity为主,其他均为副,需业务层保证,引擎层不做检查)
 */
 func (e *entity) setClient(c *ClientMailBox, primary bool) error {
-	if e.status != EntityReady {
+	if e.status != EntityReady && c != nil {
+		if data, err := genServerErrorMessage(ErrMsgRetryLater, c.ClientId); err == nil {
+			c.Send(data)
+		}
+		log.Infof("%s setClient failed, entity status: %d, client: %s", e.String(), e.status, c.String())
 		return fmt.Errorf("cannot set entity client info, status %d", e.status)
 	}
 	if e.def.volatile.hasClient == false {

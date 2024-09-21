@@ -151,7 +151,7 @@ func onGMCommand(ws *webSocketConnection, req *webSocketMessage) (*webSocketMess
 	if data, ok := req.Data.(map[string]interface{}); ok {
 		if entityId := engine.InterfaceToInt(data["entity_id"]); entityId > 0 {
 			result := engine.EtcdValue{}
-			if err = engine.GetRedisMgr().Get(ctx, engine.GetEtcdEntityKey(engine.EntityIdType(entityId)), &result); err == nil {
+			if err = engine.GetRedisMgr().Get(ctx, engine.GetRedisEntityKey(engine.EntityIdType(entityId)), &result); err == nil {
 				if target, ok := result[engine.EtcdValueServer].(string); ok {
 					targetServer = target
 				}

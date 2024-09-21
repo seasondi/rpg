@@ -174,7 +174,7 @@ func callEntity(L *lua.LState) int {
 		defer cancel()
 
 		result := engine.EtcdValue{}
-		if err := engine.GetRedisMgr().Get(ctx, engine.GetEtcdEntityKey(engine.EntityIdType(entityId)), &result); err != nil {
+		if err := engine.GetRedisMgr().Get(ctx, engine.GetRedisEntityKey(engine.EntityIdType(entityId)), &result); err != nil {
 			log.Warnf("call entity[%d] function[%s], error: %s", entityId, funcName, err.Error())
 			return 0
 		}
@@ -241,7 +241,7 @@ func callStub(L *lua.LState) int {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
 		result := engine.EtcdValue{}
-		if err := engine.GetRedisMgr().Get(ctx, engine.GetEtcdEntityKey(entityId), &result); err != nil {
+		if err := engine.GetRedisMgr().Get(ctx, engine.GetRedisEntityKey(entityId), &result); err != nil {
 			log.Warnf("call entity[%d] function[%s] but not found entity", entityId, funcName)
 			return 0
 		}

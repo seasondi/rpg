@@ -596,3 +596,7 @@ func parseTimerString(t string) (int64, error) {
 
 	return ms, nil
 }
+
+func GetRedisEntityKey(id EntityIdType) string {
+	return fmt.Sprintf("%s%d.%d", EntityPrefix, GetConfig().ServerId, id)
+}

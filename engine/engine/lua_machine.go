@@ -56,11 +56,43 @@ func initLuaMachine() error {
 	registerApiToRegistry()
 	registerGlobalEntry()
 	registerModuleToLua()
+
+	if err := loadEntityFiles(); err != nil {
+		return err
+	}
+
+	log.Infof("lua vm machine inited.")
+	return nil
+}
+
+func loadEntityFiles() error {
 	if err := luaL.DoFile(cfg.WorkPath + "/" + bootstrapLua); err != nil {
 		log.Errorf("load [%s] in path [%s], error: %s", bootstrapLua, cfg.WorkPath, err.Error())
 		return err
 	}
-	log.Infof("lua vm machine inited.")
+	scriptPath := getLuaEntryValue("scriptPath")
+	if scriptPath.Type() == lua.LTNil {
+		return errors.New(globalEntry + ".scriptPath is necessary, please set in script(relative path to \"WorkPath\" defined in config)")
+	}
+
+	for _, entityName := range defMgr.GetAllEntityNames() {
+		def := defMgr.GetEntityDef(entityName)
+		if def == nil {
+			return errors.New("not found def for entity " + entityName)
+		}
+		if gSvrType == STRobot {
+			GetRobotManager().genMetaTable(entityName)
+		} else {
+			GetEntityManager().genMetaTable(entityName)
+		}
+
+		if err := def.loadInterfaceFiles(); err != nil {
+			return err
+		}
+		if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + entityName + ".lua"); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

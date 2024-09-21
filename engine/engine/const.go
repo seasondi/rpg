@@ -178,6 +178,7 @@ const (
 	ErrMsgLoginByOther            = "LOGIN_BY_OTHER"            //被顶号
 	ErrMsgInvalidMessage          = "INVALID_MESSAGE"           //无效消息
 	ErrMsgTooBusy                 = "MESSAGE_TOO_BUSY"          //请求频率过于频繁
+	ErrMsgRetryLater              = "RETRY_LATER"               //稍后再试
 )
 
 const StubEntryMethod = "entry" //entry stub必须定义的函数,登录主入口

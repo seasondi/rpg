@@ -34,6 +34,12 @@ GMAvatar.kick_user = NewGMCommand("踢玩家下线", GMAuthorityDebug,
 GMAvatar.kick_user.callback = function(ent)
     if ent.isAvatar then
         ent:destroy()
+        if ent.account_id then
+            local account = rpg.entities[ent.account_id]
+            if account then
+                account:destroy()
+            end
+        end
     else
         return "非玩家ID"
     end

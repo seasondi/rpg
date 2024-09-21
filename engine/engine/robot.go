@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	lua "github.com/yuin/gopher-lua"
 	"strconv"
@@ -28,28 +27,12 @@ func newRobot(entityId EntityIdType, entityName string, conn *TcpClient) (*Robot
 }
 
 func (m *Robot) init() error {
-	scriptPath := getLuaEntryValue("scriptPath")
-	if scriptPath.Type() == lua.LTNil {
-		log.Warn(globalEntry + ".scriptPath is necessary, please set in script(relative path to \"WorkPath\" defined in config)")
-		return errors.New("scriptPath not defined")
-	}
-
-	isEntityLoaded := GetRobotManager().IsEntityLoaded(m.entityName)
-
 	m.luaEntity = luaL.NewTable()
 	luaL.SetMetatable(m.luaEntity, GetRobotManager().genMetaTable(m.entityName))
 	m.luaEntity.RawSetString(entityFieldId, EntityIdToLua(m.entityId))
 	m.def = defMgr.GetEntityDef(m.entityName)
 	if m.def == nil {
 		return fmt.Errorf("cannot find entity[%s] def, please check entities.xml", m.entityName)
-	}
-	if !isEntityLoaded {
-		if err := m.def.loadInterfaceFiles(); err != nil {
-			return err
-		}
-		if err := luaL.DoFile(cfg.WorkPath + "/" + scriptPath.String() + "/" + m.entityName + ".lua"); err != nil {
-			return err
-		}
 	}
 	GetRobotManager().registerEntity(m)
 	m.registerDef()

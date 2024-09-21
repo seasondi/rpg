@@ -76,6 +76,14 @@ func (m *entityDefs) GetEntityDef(name string) *entityDef {
 	return m.defMap[name]
 }
 
+func (m *entityDefs) GetAllEntityNames() []string {
+	result := make([]string, 0)
+	for name := range m.defMap {
+		result = append(result, name)
+	}
+	return result
+}
+
 func (m *entityDefs) GetAlias(name string) *propType {
 	if pt, ok := m.alias[name]; ok {
 		return &pt
