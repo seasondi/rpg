@@ -11,9 +11,9 @@ type ConnectIdType uint32 //客户端连接ID类型
 const entityIdTypeString = "int64" //entityId类型名
 
 const (
-	ServerTick          = 100 * time.Millisecond //服务器tick间隔
-	defaultSaveInterval = 5                      //自动存盘间隔, 单位: 分钟
-	HeartbeatTick       = 5                      //默认心跳时间,单位：秒
+	ServerTick          = 50 * time.Millisecond //服务器tick间隔
+	defaultSaveInterval = 5                     //自动存盘间隔, 单位: 分钟
+	HeartbeatTick       = 5                     //默认心跳时间,单位：秒
 )
 
 const (

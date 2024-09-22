@@ -1,9 +1,9 @@
 package engine
 
 import (
+	lua "github.com/yuin/gopher-lua"
 	"rpg/engine/engine/spinLock"
 	"rpg/engine/engine/timerWheel"
-	lua "github.com/yuin/gopher-lua"
 	"time"
 )
 
@@ -38,11 +38,12 @@ func (m *timerMgr) init() error {
 func (m *timerMgr) close() {
 }
 
-func (m *timerMgr) HandleMainTick() {
+func (m *timerMgr) Tick() {
 	m.tw.HandleMainTick(time.Now().Add(time.Duration(GetTimeOffset()) * time.Second))
 }
 
-/*AddTimer 添加定时器,精度0.1秒
+/*
+AddTimer 添加定时器,精度0.1秒
 
 d: 定时器首次触发间隔(毫秒)
 
@@ -82,7 +83,7 @@ func (m *timerMgr) ShowTimeWheelInfo() {
 	log.Info(m.tw.String())
 }
 
-//脚本层添加的entity定时器回调触发
+// 脚本层添加的entity定时器回调触发
 func entityScriptTimerCallback(params ...interface{}) {
 	//1: entityId
 	//2: lua function name

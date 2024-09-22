@@ -18,6 +18,7 @@ func main() {
 	log = engine.GetLogger()
 	defer engine.Close()
 
+	initTaskManager()
 	getGameProxy().SyncFromEtcd()
 	initSysSignalMgr()
 

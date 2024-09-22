@@ -10,7 +10,6 @@ import (
 	clientV3 "go.etcd.io/etcd/client/v3"
 	"rpg/engine/engine"
 	"rpg/engine/message"
-	"sync"
 	"time"
 )
 
@@ -38,7 +37,7 @@ func (m *gameHandler) OnDisconnect(conn *engine.TcpClient) {
 
 func (m *gameHandler) OnMessage(conn *engine.TcpClient, buf []byte) error {
 	msgId, clientId, data, err := engine.ParseMessage(buf)
-	log.Trace("on process game message, msgId: ", msgId, ", clientId: ", clientId, ", err: ", err)
+	log.Trace("on process game message, msgId: ", msgId, ", bufLen: ", len(buf), ", clientId: ", clientId, ", err: ", err)
 	if err == nil {
 		switch msgId {
 		case engine.ServerMessageTypeHeartBeatRsp:
@@ -89,7 +88,6 @@ type serverInfo struct {
 }
 
 type gameProxy struct {
-	sync.Mutex
 	gameServers  map[string]*serverInfo                                             //game server name -> serverInfo
 	stubEntities map[string]*stubInfo                                               //stub entity name -> stubInfo
 	clientToGame map[engine.ConnectIdType]map[engine.EntityIdType]*engine.TcpClient //clientConnectId -> entityId-> TcpClient
@@ -103,9 +101,6 @@ func (m *gameProxy) init() {
 }
 
 func (m *gameProxy) HandleUpdateGame(key string, value engine.EtcdValue) {
-	m.Lock()
-	defer m.Unlock()
-
 	prefix, serverId, _, err := engine.ParseEtcdServerKey(key)
 	if err != nil {
 		log.Debugf("parse game server key failed: %s, key: %s", err.Error(), key)
@@ -137,9 +132,6 @@ func (m *gameProxy) HandleUpdateGame(key string, value engine.EtcdValue) {
 }
 
 func (m *gameProxy) HandleDeleteGame(key string) {
-	m.Lock()
-	defer m.Unlock()
-
 	if game, find := m.gameServers[key]; find {
 		game.conn.Disconnect()
 		delete(m.gameServers, key)
@@ -147,9 +139,6 @@ func (m *gameProxy) HandleDeleteGame(key string) {
 }
 
 func (m *gameProxy) HandleUpdateStub(key string, value engine.EtcdValue) {
-	m.Lock()
-	defer m.Unlock()
-
 	prefix, serverId, entityId, err := engine.ParseEtcdStubKey(key)
 	if err != nil {
 		log.Warnf("parse etcd stub key failed: %s, key: %s", err.Error(), key)
@@ -178,9 +167,6 @@ func (m *gameProxy) HandleUpdateStub(key string, value engine.EtcdValue) {
 }
 
 func (m *gameProxy) HandleDeleteStub(key string) {
-	m.Lock()
-	defer m.Unlock()
-
 	prefix, serverId, entityId, err := engine.ParseEtcdStubKey(key)
 	if err != nil {
 		log.Warnf("parse etcd stub key failed: %s, key: %s", err.Error(), key)
@@ -225,12 +211,15 @@ func (m *gameProxy) SyncFromEtcd() {
 	}
 }
 
-func (m *gameProxy) HandleMainTick() {
-	m.Lock()
-	defer m.Unlock()
-
+func (m *gameProxy) Tick() {
 	for _, info := range m.gameServers {
 		info.conn.Tick()
+	}
+}
+
+func (m *gameProxy) Disconnect() {
+	for _, info := range m.gameServers {
+		info.conn.Disconnect()
 	}
 }
 
@@ -367,8 +356,7 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 	return m.sendRpcToGame(gameConn, msgTy, clientId, data)
 }
 
-func (m *gameProxy) onClientClosed(c gnet.Conn) {
-	clientId := getClientId(c)
+func (m *gameProxy) onClientClosed(clientId engine.ConnectIdType) {
 	gameConns := make(map[*engine.TcpClient]bool)
 	if games, ok := m.clientToGame[clientId]; ok {
 		for _, game := range games {
@@ -435,7 +423,6 @@ func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 	now := time.Now()
 	var minGameLoad *engine.GameLoadInfo
 	for _, info := range m.gameServers {
-		log.Debug("%+v", info.load)
 		if info.isStub == false && info.load != nil {
 			if info.load.Time.IsZero() || now.Sub(info.load.Time) > time.Minute {
 				continue
@@ -460,7 +447,7 @@ func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 }
 
 func (m *gameProxy) updateGameLoadInfo() {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 	if r, err := engine.GetRedisMgr().HGetAll(ctx, engine.RedisHashGameLoad); err != nil {
 		log.Warnf("update game load info, get from redis error: %s", err.Error())
@@ -468,11 +455,9 @@ func (m *gameProxy) updateGameLoadInfo() {
 		for name, v := range r {
 			data := &engine.GameLoadInfo{}
 			if err = json.Unmarshal([]byte(v), &data); err == nil {
-				m.Lock()
 				if server, ok := m.gameServers[name]; ok {
 					server.load = data
 				}
-				m.Unlock()
 			}
 		}
 	}

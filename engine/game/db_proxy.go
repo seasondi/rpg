@@ -16,7 +16,7 @@ const (
 
 var dbMgr *dbProxy
 
-//game连接db的TcpClient消息处理handler
+// game连接db的TcpClient消息处理handler
 type dbHandler struct {
 }
 
@@ -132,7 +132,7 @@ func (m *dbProxy) doSaveEntity() {
 	}
 }
 
-func (m *dbProxy) HandleMainTick() {
+func (m *dbProxy) Tick() {
 	m.doSaveEntity()
 	m.conn.Tick()
 }

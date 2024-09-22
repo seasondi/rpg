@@ -7,7 +7,7 @@ import (
 
 func handlerCreateEntity(c *client, id engine.EntityIdType, args []interface{}) {
 	entityName := args[0].(string)
-	entity, err := engine.GetRobotManager().CreateEntity(id, entityName, args[1].(map[string]interface{}), c.conn)
+	entity, err := engine.GetRobotManager().CreateEntity(id, entityName, map[string]interface{}{}, c.conn)
 	if err != nil {
 		log.Errorf("create [%s:%d] error: %s", entityName, id, err.Error())
 	} else {
@@ -63,7 +63,9 @@ func dispatchMessage(c *client, data map[string]interface{}) {
 		handlerHeartbeat(c)
 		return
 	}
-	log.Debug(data)
+	if engine.GetConfig().PrintRpcLog {
+		log.Debug(data)
+	}
 	entityId := engine.EntityIdType(engine.InterfaceToInt(data[engine.ClientMsgDataFieldEntityID]))
 	args := data[engine.ClientMsgDataFieldArgs].([]interface{})
 

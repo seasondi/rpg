@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"github.com/panjf2000/gnet"
 	"rpg/engine/engine"
 	"runtime"
-	"strings"
 	"time"
 )
 
@@ -18,43 +18,53 @@ func (m *etcdWatcher) Key() string {
 
 func (m *etcdWatcher) OnUpdated(kv *engine.EtcdKV) {
 	log.Info("etcd key update: ", kv)
-	key := kv.Key()
-	if strings.HasPrefix(key, engine.ServiceGamePrefix) {
-		getGameProxy().HandleUpdateGame(kv.Key(), kv.Value())
-	} else if strings.HasPrefix(key, engine.StubPrefix) {
-		getGameProxy().HandleUpdateStub(kv.Key(), kv.Value())
-	}
+	getTaskManager().Push(&AddGameServerTask{kv: *kv})
 }
 
 func (m *etcdWatcher) OnDelete(kv *engine.EtcdKV) {
 	log.Info("etcd key delete: ", kv)
-	key := kv.Key()
-	if strings.HasPrefix(key, engine.ServiceGamePrefix) {
-		getGameProxy().HandleDeleteGame(kv.Key())
-	} else if strings.HasPrefix(key, engine.StubPrefix) {
-		getGameProxy().HandleDeleteStub(kv.Key())
-	}
+	getTaskManager().Push(&RemoveGameServerTask{kv: *kv})
 }
 
 type eventLoop struct {
 	gnet.EventServer
 }
 
-func (m *eventLoop) startTick(server gnet.Server) {
+func (m *eventLoop) tick() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
+	var timer *time.Timer
+
+	defer func() {
+		if timer != nil {
+			timer.Stop()
+		}
+	}()
+
+	engine.GetTimer().AddTimer(0, 2*time.Second, m.getGameLoad)
+
 	for {
-		delay, _ := m.serverTick()
-		time.Sleep(delay)
+		if quit.Load() == quitStatusQuited {
+			log.Infof("server main tick stopped")
+			m.disconnectServer()
+			_ = gnet.Stop(context.Background(), engine.ListenProtoAddr())
+			return
+		}
+		delay := m.serverTick()
+		if timer == nil {
+			timer = time.NewTimer(delay)
+		} else {
+			timer.Reset(delay)
+		}
+		select {
+		case <-timer.C:
+		}
 	}
 }
 
-func (m *eventLoop) getGameLoad() {
-	for {
-		getGameProxy().updateGameLoadInfo()
-		time.Sleep(2 * time.Second)
-	}
+func (m *eventLoop) getGameLoad(_ ...interface{}) {
+	getGameProxy().updateGameLoadInfo()
 }
 
 func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
@@ -62,8 +72,7 @@ func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	if err := engine.GetEtcd().RegisterServer(); err != nil {
 		log.Fatalf("register to etcd failed: %s", err.Error())
 	}
-	go m.startTick(server)
-	go m.getGameLoad()
+	go m.tick()
 	return gnet.None
 }
 
@@ -72,25 +81,28 @@ func (m *eventLoop) OnShutdown(_ gnet.Server) {
 
 func (m *eventLoop) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 	log.Infof("conn[%s] opened", c.RemoteAddr())
-	getClientProxy().addConn(c)
+	getTaskManager().Push(&AddClientTask{conn: c})
 	return nil, gnet.None
 }
 
 func (m *eventLoop) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
 	log.Infof("conn[%s] closed, msg: %v", c.RemoteAddr(), err)
-	getClientProxy().removeConn(c)
-	getGameProxy().onClientClosed(c)
+	getTaskManager().Push(&RemoveClientTask{clientId: getClientId(c)})
 	return gnet.None
 }
 
 func (m *eventLoop) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
-	getDataProcessor().append(c, append([]byte{}, frame...))
+	getTaskManager().Push(&ClientMessageTask{conn: c, buf: append([]byte{}, frame...)})
 	return nil, gnet.None
 }
 
-func (m *eventLoop) serverTick() (delay time.Duration, action gnet.Action) {
+func (m *eventLoop) serverTick() time.Duration {
 	engine.Tick()
-	getDataProcessor().process()
-	getGameProxy().HandleMainTick()
-	return engine.ServerTick, gnet.None
+	getTaskManager().Tick()
+	getGameProxy().Tick()
+	return engine.ServerTick
+}
+
+func (m *eventLoop) disconnectServer() {
+	getGameProxy().Disconnect()
 }

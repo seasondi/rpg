@@ -77,6 +77,9 @@ func loadEntityFiles() error {
 
 	for _, entityName := range defMgr.GetAllEntityNames() {
 		def := defMgr.GetEntityDef(entityName)
+		if gSvrType == STRobot && def.volatile.hasClient == false {
+			continue
+		}
 		if def == nil {
 			return errors.New("not found def for entity " + entityName)
 		}

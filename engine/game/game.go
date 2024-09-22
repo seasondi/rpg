@@ -13,53 +13,91 @@ type eventLoop struct {
 	gnet.EventServer
 }
 
-func (m *eventLoop) startTick() {
+func (m *eventLoop) tick() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
+	var timer *time.Timer
+
+	defer func() {
+		if timer != nil {
+			timer.Stop()
+		}
+	}()
+
+	engine.GetTimer().AddTimer(0, time.Second, m.reportLoad)
+
 	for {
-		if delay := m.serverTick(); delay < 0 {
+		if quit.Load() == quitStatusQuited {
+			log.Infof("server main tick stopped")
+			m.disconnectServer()
+			_ = gnet.Stop(context.Background(), engine.ListenProtoAddr())
 			return
+		}
+		delay := m.serverTick()
+		if timer == nil {
+			timer = time.NewTimer(delay)
 		} else {
-			time.Sleep(delay)
+			timer.Reset(delay)
+		}
+		select {
+		case <-timer.C:
 		}
 	}
 }
 
-func (m *eventLoop) reportLoad() {
-	for {
+func (m *eventLoop) reportLoad(_ ...interface{}) {
+	entityCount := engine.GetEntityManager().GetEntityCount()
+
+	go func(count int) {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
 		data := engine.GameLoadInfo{
 			Name:        engine.ServiceName(),
-			EntityCount: engine.GetEntityManager().GetEntityCount(),
+			EntityCount: entityCount,
 			Time:        time.Now(),
 		}
 		info, _ := json.Marshal(data)
-		if err := engine.GetRedisMgr().HSet(context.Background(), engine.RedisHashGameLoad, engine.ServiceName(), info); err != nil {
+		if err := engine.GetRedisMgr().HSet(ctx, engine.RedisHashGameLoad, engine.ServiceName(), info); err != nil {
 			log.Warnf("hset to redis hash: %s, error: %s", engine.RedisHashGameLoad, err.Error())
 		}
-		time.Sleep(time.Second)
-	}
+	}(entityCount)
 }
 
 func (m *eventLoop) OnInitComplete(server gnet.Server) (action gnet.Action) {
 	engine.GetServerStep().Start()
-	for !engine.GetServerStep().Completed() {
-		engine.GetServerStep().Print()
-		if delay := m.serverTick(); delay < 0 {
-			return gnet.Shutdown
+
+	for {
+		select {
+		case <-time.After(time.Second):
+			if !engine.GetServerStep().Completed() {
+				if quit.Load() == quitStatusQuited {
+					m.disconnectServer()
+					goto serverStop
+				}
+				engine.GetServerStep().Print()
+				m.serverTick()
+			} else {
+				goto serverStart
+			}
 		}
-		time.Sleep(time.Second)
 	}
+
+serverStart:
 	engine.GetEntityManager().SetConnFinder(getGateProxy().GetGateConn)
-	log.Infof("game[%s] server init complete, listen at: %s", engine.ServiceName(), server.Addr)
-
 	if err := engine.GetEtcd().RegisterServer(); err != nil {
-		log.Fatalf("register to etcd failed: %s", err.Error())
+		log.Warnf("register to etcd failed: %s", err.Error())
+		return gnet.Shutdown
 	}
 
-	go m.startTick()
-	go m.reportLoad()
+	go m.tick()
+
+	log.Infof("game[%s] server init complete, listen at: %s", engine.ServiceName(), server.Addr)
 	return gnet.None
+
+serverStop:
+	return gnet.Shutdown
 }
 
 func (m *eventLoop) OnShutdown(_ gnet.Server) {
@@ -71,29 +109,25 @@ func (m *eventLoop) OnOpened(c gnet.Conn) (out []byte, action gnet.Action) {
 }
 
 func (m *eventLoop) OnClosed(c gnet.Conn, err error) (action gnet.Action) {
-	log.Infof("conn[%s] closed, msg: %v", c.RemoteAddr(), err)
-	getGateProxy().RemoveGate(c)
+	log.Infof("conn[%s:%v] closed, msg: %v", c.RemoteAddr(), c.Context(), err)
+	getTaskManager().Push(&RemoveGateTask{conn: c})
 	return gnet.None
 }
 
 func (m *eventLoop) React(frame []byte, c gnet.Conn) (out []byte, action gnet.Action) {
-	switch frame[0] {
-	case engine.ServerMessageTypeSayHello:
-		if _, _, data, err := engine.ParseMessage(frame); err == nil {
-			_ = processSyncGate(data, c)
-		}
-	default:
-		getDataProcessor().append(c, append([]byte{}, frame...))
-	}
+	getTaskManager().Push(&NetMessageTask{conn: c, buf: append([]byte{}, frame...)})
 	return nil, gnet.None
 }
 
 func (m *eventLoop) serverTick() time.Duration {
 	engine.Tick()
-	getDataProcessor().process()
-	getDBProxy().HandleMainTick()
-	if checkStopServer() == true {
-		return -1
-	}
+	getTaskManager().Tick()
+	getDBProxy().Tick()
 	return engine.ServerTick
+}
+
+func (m *eventLoop) disconnectServer() {
+	if getDBProxy().conn != nil {
+		getDBProxy().conn.Disconnect()
+	}
 }

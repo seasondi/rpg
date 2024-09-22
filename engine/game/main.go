@@ -19,6 +19,7 @@ func main() {
 	defer engine.Close()
 	log = engine.GetLogger()
 
+	initTaskManager()
 	registerApi()
 	initServer()
 	syncStubFromEtcd()

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"rpg/engine/engine"
+	"fmt"
 	"github.com/sirupsen/logrus"
+	"rpg/engine/engine"
 	"time"
 )
 
@@ -13,7 +14,7 @@ var myself *engine.Robot
 
 func main() {
 	if err := engine.Init(engine.STRobot); err != nil {
-		log.Errorf("engine init error: %s", err.Error())
+		fmt.Print("engine init error: ", err.Error())
 		return
 	}
 	log = engine.GetLogger()

@@ -5,7 +5,6 @@ import (
 	"github.com/panjf2000/gnet"
 	"rpg/engine/engine"
 	"strconv"
-	"sync"
 	"time"
 )
 
@@ -99,11 +98,8 @@ func getClientProxy() *ClientProxy {
 }
 
 type ClientProxy struct {
-	clientMutex sync.Mutex
-	clientMap   map[engine.ConnectIdType]gnet.Conn //clientConnectId -> conn
-
-	metricsMutex sync.Mutex
-	metricMap    map[engine.ConnectIdType]*Metrics
+	clientMap map[engine.ConnectIdType]gnet.Conn //clientConnectId -> conn
+	metricMap map[engine.ConnectIdType]*Metrics
 }
 
 func (m *ClientProxy) init() {
@@ -118,38 +114,26 @@ func (m *ClientProxy) addConn(c gnet.Conn) {
 	}
 	c.SetContext(ctxMap)
 
-	m.clientMutex.Lock()
 	m.clientMap[clientConnectId] = c
-	m.clientMutex.Unlock()
 	log.Infof("add client conn[%s] with ctx: %+v", c.RemoteAddr(), c.Context())
 
 	metric := newMetrics(clientConnectId)
-	m.metricsMutex.Lock()
 	m.metricMap[clientConnectId] = metric
-	m.metricsMutex.Unlock()
 	m.startActiveCheck(metric.clientId)
 }
 
-func (m *ClientProxy) removeConn(c gnet.Conn) {
-	if ctx, ok := c.Context().(connCtxType); ok {
-		if id, ok := ctx[ctxKeyConnId]; ok {
-			m.clientMutex.Lock()
-			if _, find := m.clientMap[id]; find {
-				m.clientMutex.Unlock()
-				log.Info(m.getMetricsInfo(id))
-				m.stopActiveCheck(id)
-				delete(m.clientMap, id)
-				log.Infof("remove client conn[%s] with ctx: %+v", c.RemoteAddr(), c.Context())
-			} else {
-				m.clientMutex.Unlock()
-			}
-		}
+func (m *ClientProxy) removeConn(clientId engine.ConnectIdType) {
+	if _, find := m.clientMap[clientId]; find {
+		log.Info(m.getMetricsInfo(clientId))
+		m.stopActiveCheck(clientId)
+		delete(m.clientMap, clientId)
+		log.Infof("remove client conn, clientId: %d", clientId)
+	} else {
+		log.Warnf("remove client conn but clientId: %d not found", clientId)
 	}
 }
 
 func (m *ClientProxy) client(clientId engine.ConnectIdType) gnet.Conn {
-	m.clientMutex.Lock()
-	defer m.clientMutex.Unlock()
 	if c, ok := m.clientMap[clientId]; ok {
 		return c
 	} else {
@@ -158,9 +142,6 @@ func (m *ClientProxy) client(clientId engine.ConnectIdType) gnet.Conn {
 }
 
 func (m *ClientProxy) updateActive(clientId engine.ConnectIdType, msgType uint8) bool {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
-
 	busy := false
 	if c, ok := m.metricMap[clientId]; ok {
 		now := time.Now()
@@ -187,8 +168,6 @@ func (m *ClientProxy) updateActive(clientId engine.ConnectIdType, msgType uint8)
 }
 
 func (m *ClientProxy) checkActive(clientId engine.ConnectIdType) bool {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		heartbeatDuration := engine.GetConfig().HeartBeatInterval
 		if heartbeatDuration <= 0 {
@@ -205,8 +184,6 @@ func (m *ClientProxy) checkActive(clientId engine.ConnectIdType) bool {
 }
 
 func (m *ClientProxy) getActive(clientId engine.ConnectIdType) *ClientMetricsActive {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		return c.metrics.active
 	}
@@ -215,8 +192,6 @@ func (m *ClientProxy) getActive(clientId engine.ConnectIdType) *ClientMetricsAct
 }
 
 func (m *ClientProxy) setBindEntity(clientId engine.ConnectIdType, entityId engine.EntityIdType) {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		c.metrics.active.bindEntityId = entityId
 		c.metrics.active.bindEntityTime = time.Now()
@@ -234,8 +209,6 @@ func (m *ClientProxy) checkActiveTimerCb(params ...interface{}) {
 }
 
 func (m *ClientProxy) startActiveCheck(clientId engine.ConnectIdType) {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		if c.metrics.active.activeTimerId == 0 {
 			c.metrics.active.activeTimerId = engine.GetTimer().AddTimer(time.Second, 2*time.Second, m.checkActiveTimerCb, clientConnectId)
@@ -245,8 +218,6 @@ func (m *ClientProxy) startActiveCheck(clientId engine.ConnectIdType) {
 }
 
 func (m *ClientProxy) stopActiveCheck(clientId engine.ConnectIdType) {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		if c.metrics.active.activeTimerId > 0 {
 			engine.GetTimer().Cancel(c.metrics.active.activeTimerId)
@@ -257,8 +228,6 @@ func (m *ClientProxy) stopActiveCheck(clientId engine.ConnectIdType) {
 }
 
 func (m *ClientProxy) rpcMetrics(clientId engine.ConnectIdType, name string) int {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	if c, ok := m.metricMap[clientId]; ok {
 		now := time.Now()
 		var rpc *ClientMetricsRpc
@@ -285,8 +254,6 @@ func (m *ClientProxy) rpcMetrics(clientId engine.ConnectIdType, name string) int
 }
 
 func (m *ClientProxy) getMetricsInfo(clientId engine.ConnectIdType) string {
-	m.metricsMutex.Lock()
-	defer m.metricsMutex.Unlock()
 	msg := "\n=============================Metrics Begin============================================\n"
 	if c, ok := m.metricMap[clientId]; ok {
 		msg += fmt.Sprintf("[Metrics clientId %d]\n", clientId)

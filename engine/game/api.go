@@ -170,7 +170,7 @@ func callEntity(L *lua.LState) int {
 			return 0
 		}
 	} else {
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
+		ctx, cancel := context.WithTimeout(context.TODO(), 500*time.Millisecond)
 		defer cancel()
 
 		result := engine.EtcdValue{}
@@ -238,7 +238,7 @@ func callStub(L *lua.LState) int {
 			return 0
 		}
 	} else {
-		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
+		ctx, cancel := context.WithTimeout(context.TODO(), 500*time.Millisecond)
 		defer cancel()
 		result := engine.EtcdValue{}
 		if err := engine.GetRedisMgr().Get(ctx, engine.GetRedisEntityKey(entityId), &result); err != nil {

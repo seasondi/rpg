@@ -1,13 +1,20 @@
 package main
 
 import (
-	"context"
-	"github.com/panjf2000/gnet"
+	"go.uber.org/atomic"
 	"os"
 	"os/signal"
-	"rpg/engine/engine"
 	"syscall"
 )
+
+const (
+	quitStatusNone      = 0
+	quitStatusBeginQuit = 1
+	quitStatusQuiting   = 2
+	quitStatusQuited    = 3
+)
+
+var quit atomic.Int32
 
 var gSysSignalMgr *systemSignal
 
@@ -23,6 +30,7 @@ type systemSignal struct {
 }
 
 func (m *systemSignal) init() {
+	quit.Store(quitStatusNone)
 	m.ch = make(chan os.Signal, 1)
 	signal.Notify(m.ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	signal.Notify(m.ch, syscall.SIGQUIT, syscall.SIGILL, syscall.SIGABRT)
@@ -30,11 +38,6 @@ func (m *systemSignal) init() {
 	go func() {
 		s := <-m.ch
 		log.Infof("received signal: %s", s.String())
-		stopServer()
+		getTaskManager().Push(&ServerStopTask{quitStatus: quitStatusQuited})
 	}()
-}
-
-func stopServer() {
-	log.Infof("server quit success")
-	_ = gnet.Stop(context.TODO(), engine.ListenProtoAddr())
 }

@@ -12,8 +12,7 @@
   },
 
   "redis": {
-    "hosts": "localhost:6379",
-    "aloneMode": true
+    "hosts": "localhost:6379"
   },
 
   "mongo_common": {

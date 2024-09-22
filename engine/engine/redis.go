@@ -39,20 +39,20 @@ type redisManager struct {
 
 func (m *redisManager) init() error {
 	if GetConfig().Redis == nil {
-		return nil
+		return errors.New("required redis config")
 	}
 	hosts := strings.Split(cfg.Redis.Hosts, ",")
 	if len(hosts) == 0 {
 		return errors.New("redis hosts is empty")
 	}
-	if cfg.Redis.AloneMode == false {
+	if len(hosts) > 1 {
 		opts := redis.ClusterOptions{
 			Addrs:    hosts,
 			Password: cfg.Redis.Password,
 		}
 		m.clusterClient = redis.NewClusterClient(&opts)
 		if ping := m.clusterClient.Ping(context.TODO()); ping.Err() != nil {
-			return ping.Err()
+			return errors.New("init cluster redis error: " + ping.Err().Error())
 		}
 		log.Infof("redis inited mode[cluster].")
 	} else {
@@ -66,7 +66,7 @@ func (m *redisManager) init() error {
 		}
 		m.aloneClient = redis.NewClient(&opts)
 		if ping := m.aloneClient.Ping(context.TODO()); ping.Err() != nil {
-			return ping.Err()
+			return errors.New("init alone redis error: " + ping.Err().Error())
 		}
 		log.Infof("redis inited mode[alone].")
 	}

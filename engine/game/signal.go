@@ -27,6 +27,6 @@ func (m *systemSignal) init() {
 	go func() {
 		s := <-m.ch
 		log.Infof("received signal: %s", s.String())
-		quit.CAS(quitStatusNone, quitStatusBeginQuit)
+		getTaskManager().Push(&ServerStopTask{quitStatus: quitStatusBeginQuit})
 	}()
 }

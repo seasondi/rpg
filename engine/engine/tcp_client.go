@@ -113,6 +113,7 @@ type TcpClient struct {
 	handlerAction  atomic.Int32
 	autoReconnect  bool
 	reconnectTimes atomic.Int32
+	isReconnecting atomic.Bool
 }
 
 func (m *TcpClient) init(opts ...Option) {
@@ -228,6 +229,9 @@ func (m *TcpClient) Disconnect() {
 }
 
 func (m *TcpClient) markReconnect() {
+	if m.connAction.Load() == connActionClose {
+		return
+	}
 	m.connAction.Store(connActionReconnect)
 }
 
@@ -260,8 +264,8 @@ func (m *TcpClient) WriteBuf(buf []byte) (int, error) {
 
 func (m *TcpClient) Tick() {
 	if m.IsDisconnected() {
-		if m.autoReconnect && m.connAction.Load() != connActionReconnect {
-			m.connAction.Store(connActionReconnect)
+		if m.autoReconnect {
+			m.markReconnect()
 			m.doConnAction()
 		}
 		return
@@ -344,22 +348,25 @@ func (m *TcpClient) doConnAction() {
 	}
 
 	if action == connActionReconnect {
-		go func() {
-			for {
-				if m.reconnectTimes.Load() < autoReconnectRetryTimes {
-					m.reconnectTimes.Add(1)
-					if err := m.connect(); err != nil {
-						log.Warnf("connect to %s error: %s", m.addr, err.Error())
-						time.Sleep(5 * time.Second)
+		if ok := m.isReconnecting.CAS(false, true); ok {
+			go func() {
+				defer m.isReconnecting.Store(false)
+				for {
+					if m.reconnectTimes.Load() < autoReconnectRetryTimes && m.connAction.Load() == connActionReconnect {
+						m.reconnectTimes.Add(1)
+						if err := m.connect(); err != nil {
+							log.Warnf("connect to %s error: %s", m.addr, err.Error())
+							time.Sleep(5 * time.Second)
+						} else {
+							m.connAction.Store(connActionNone)
+							return
+						}
 					} else {
-						m.connAction.Store(connActionNone)
 						return
 					}
-				} else {
-					return
 				}
-			}
-		}()
+			}()
+		}
 	} else {
 		m.connAction.Store(connActionNone)
 	}

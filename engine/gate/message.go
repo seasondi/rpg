@@ -27,6 +27,10 @@ func processHeartBeatResponse(_ *engine.TcpClient, clientId engine.ConnectIdType
 
 // processGameRpc rpc消息发给客户端
 func processGameRpc(_ *engine.TcpClient, clientId engine.ConnectIdType, buf []byte) error {
+	if engine.GetConfig().PrintRpcLog {
+		r, _ := engine.GetProtocol().UnMarshal(buf)
+		log.Debug("[RPC]", r)
+	}
 	if clientConn := getClientProxy().client(clientId); clientConn != nil {
 		_ = clientConn.AsyncWrite(buf)
 	} else {
@@ -66,7 +70,7 @@ func processDisconnectClient(_ *engine.TcpClient, clientId engine.ConnectIdType)
 	if clientConn == nil {
 		return nil
 	}
-	getClientProxy().removeConn(clientConn)
+	getClientProxy().removeConn(clientId)
 	_ = clientConn.Close()
 	return nil
 }

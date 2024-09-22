@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"github.com/panjf2000/gnet"
 	lua "github.com/yuin/gopher-lua"
 	"go.uber.org/atomic"
 	"rpg/engine/engine"
@@ -16,9 +14,9 @@ const (
 )
 
 var quit atomic.Int32
-var lastQuittingCheckTime int64
 
 func initServer() {
+	quit.Store(quitStatusNone)
 	engine.GetServerStep().Register(engine.ServerStepPrepare, initDBProxy, func() {
 		getDBProxy().init()
 	})
@@ -36,24 +34,4 @@ func initServer() {
 		}
 		engine.GetServerStep().FinishHandler(initScript)
 	})
-}
-
-func checkStopServer() bool {
-	switch quit.Load() {
-	case quitStatusBeginQuit:
-		log.Info("server start quit")
-		engine.GetConfig().SaveNumPerTick += 5 //加快存盘速度
-		_ = engine.CallLuaMethodByName(engine.GetGlobalEntry(), "stop_server", 0)
-		quit.Store(quitStatusQuiting)
-	case quitStatusQuiting:
-		if engine.CanStopped() {
-			quit.Store(quitStatusQuited)
-		}
-	case quitStatusQuited:
-		log.Info("server quit success")
-		_ = gnet.Stop(context.TODO(), engine.ListenProtoAddr())
-		return true
-	}
-
-	return false
 }

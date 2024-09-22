@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"rpg/engine/engine"
 	"rpg/engine/message"
-	"sync"
 	"time"
 )
 
@@ -28,10 +27,8 @@ type gateInfo struct {
 }
 
 type gateProxy struct {
-	gateMapLock     sync.Mutex
-	gateMap         map[string]*gateInfo //gate server name -> gate info
-	gateConnMapLock sync.Mutex
-	gateConnMap     map[gnet.Conn]string //gate conn -> gate server name
+	gateMap     map[string]*gateInfo //gate server name -> gate info
+	gateConnMap map[gnet.Conn]string //gate conn -> gate server name
 
 	chosenInnerGate string //选取的内部通信gate
 }
@@ -42,47 +39,29 @@ func (m *gateProxy) init() {
 }
 
 func (m *gateProxy) AddGate(c gnet.Conn, name string, isInner bool) {
-	{
-		m.gateMapLock.Lock()
-		m.gateMap[name] = &gateInfo{conn: c, isInnerGate: isInner}
-		m.gateMapLock.Unlock()
-	}
-	{
-		m.gateConnMapLock.Lock()
-		m.gateConnMap[c] = name
-		m.gateConnMapLock.Unlock()
-	}
+	m.gateMap[name] = &gateInfo{conn: c, isInnerGate: isInner}
+	m.gateConnMap[c] = name
 	log.Infof("add gate[%s -> %s], is inner gate: %v", name, c.RemoteAddr(), isInner)
 }
 
 func (m *gateProxy) RemoveGate(c gnet.Conn) {
-	m.gateConnMapLock.Lock()
-	defer m.gateConnMapLock.Unlock()
-
 	if name, ok := m.gateConnMap[c]; ok {
 		engine.GetEntityManager().RemoveGateEntitiesConn(name)
 		delete(m.gateConnMap, c)
-
-		m.gateMapLock.Lock()
 		delete(m.gateMap, name)
 		if name == m.chosenInnerGate {
 			m.chosenInnerGate = ""
 		}
-		m.gateMapLock.Unlock()
 
-		log.Infof("remove gate[%s -> %s]", name, c.RemoteAddr())
+		log.Infof("remove gate: %s", name)
 	}
 }
 
 func (m *gateProxy) GetGateConn(name string) gnet.Conn {
-	m.gateMapLock.Lock()
-	defer m.gateMapLock.Unlock()
 	return m.gateMap[name].conn
 }
 
 func (m *gateProxy) GateName(c gnet.Conn) string {
-	m.gateConnMapLock.Lock()
-	defer m.gateConnMapLock.Unlock()
 	return m.gateConnMap[c]
 }
 
@@ -108,9 +87,6 @@ func (m *gateProxy) choseGate() string {
 }
 
 func (m *gateProxy) GetInnerGate() gnet.Conn {
-	m.gateMapLock.Lock()
-	defer m.gateMapLock.Unlock()
-
 	if m.chosenInnerGate != "" {
 		if info, find := m.gateMap[m.chosenInnerGate]; find && info.conn != nil {
 			return info.conn

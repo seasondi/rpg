@@ -3,6 +3,7 @@ package engine
 import (
 	"fmt"
 	lua "github.com/yuin/gopher-lua"
+	"time"
 )
 
 func Init(st ServerType) error {
@@ -108,8 +109,10 @@ func Tick() {
 	if luaCmdMgr != nil {
 		luaCmdMgr.doCommands()
 	}
-	GetTimer().HandleMainTick()
+	GetTimer().Tick()
 }
+
+var lastCheckStopTime time.Time
 
 func CanStopped() bool {
 	entitiesNum := len(GetEntityManager().allEntities)
@@ -117,7 +120,10 @@ func CanStopped() bool {
 	if entitiesNum == 0 && saveLen == 0 {
 		return true
 	}
-	//log.Info("check can stop, left entities num: ", entitiesNum, ", left save num: ", saveLen)
+	if time.Since(lastCheckStopTime).Seconds() >= 5 {
+		log.Info("check can stop, left entities num: ", entitiesNum, ", left save num: ", saveLen)
+		lastCheckStopTime = time.Now()
+	}
 	return false
 }
 

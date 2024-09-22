@@ -1,8 +1,6 @@
 
 function Avatar:on_init()
     print("Avatar:on_init: ", self.id)
-    print("level: ", self.level)
-    print("items: ", self.items)
 end
 
 function Avatar:on_destroy()
@@ -11,9 +9,9 @@ end
 
 function Avatar:show_popup_message(msg)
     print("Avatar:show_popup_message: ", msg)
-    self.server.use_item(1, 2)
 end
 
-function Avatar:on_update_level(old)
-    print("on level update old: ", old, ", new: ", self.level)
+function Avatar:test(t1, t2, skill)
+    print("Avatar:test")
+    self.server.test(t1, t2, skill)
 end

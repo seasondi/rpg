@@ -8,6 +8,12 @@ import (
 	"rpg/engine/message"
 )
 
+func genCloseClientMessage(clientId engine.ConnectIdType) []byte {
+	header := engine.GenMessageHeader(engine.ServerMessageTypeDisconnectClient, clientId)
+	buf, _ := engine.GetProtocol().MessageWithHead(header, nil)
+	return buf
+}
+
 // processHeartBeat 处理心跳
 func processHeartBeat(c gnet.Conn, clientId engine.ConnectIdType) error {
 	ctx, ok := c.Context().(*connContext)
