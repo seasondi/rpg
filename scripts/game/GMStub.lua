@@ -1,7 +1,7 @@
 local gm = require("gm.init")
 local json = require("json")
 
-function GMStub:on_init()
+function GMStub:on_created()
 end
 
 function GMStub:on_destroy()

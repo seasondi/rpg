@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"container/list"
 	"errors"
 	"fmt"
 	"github.com/panjf2000/gnet"
@@ -26,7 +25,6 @@ type entityManager struct {
 	metas             map[string]*lua.LTable           //entity类型名称->元表
 	allEntities       map[EntityIdType]*entity         //entityId->entity
 	luaEntityToEntity map[*lua.LTable]*entity          //脚本层entity到引擎层entity的映射
-	saveList          *list.List                       //待存盘列表,保存entity的存盘信息
 	connFinder        entityGateConnFinder             //查询entity的gate连接
 	connMap           map[string]clientIdToEntitiesMap //gate server name -> clientId->entities
 }
@@ -43,35 +41,21 @@ func (em *entityManager) init() {
 	em.metas = make(map[string]*lua.LTable)
 	em.allEntities = make(map[EntityIdType]*entity)
 	em.luaEntityToEntity = make(map[*lua.LTable]*entity)
-	em.saveList = list.New()
 	em.connMap = make(map[string]clientIdToEntitiesMap)
 }
 
-func (em *entityManager) saveEntity(e *entity, saveType int) {
-	if data := e.genSaveInfo(); data != nil {
-		if saveType == saveTypeBack {
-			em.saveList.PushBack(data)
-		} else {
-			em.saveList.PushFront(data)
-		}
+func (em *entityManager) saveEntity(e *entity) {
+	if data := e.genSaveInfo(false); data != nil {
+		GetEntitySaveManager().Add(data)
 	}
 }
 
 func (em *entityManager) saveEntityOnDestroy(e *entity) {
-	if data := e.genSaveInfo(); data != nil {
-		data.PreferCallback = true
-		em.saveList.PushFront(data)
+	if data := e.genSaveInfo(true); data != nil {
+		GetEntitySaveManager().Add(data)
 	} else {
 		log.Warnf("save %s on destroy but save data generate failed", e.String())
 	}
-}
-
-func (em *entityManager) GetSaveList() *list.List {
-	return em.saveList
-}
-
-func (em *entityManager) CreateEntity(entityName string) (*entity, error) {
-	return em.CreateEntityWithId(generateEntityId(), entityName)
 }
 
 func (em *entityManager) GetEntityById(entityId EntityIdType) *entity {
@@ -80,6 +64,10 @@ func (em *entityManager) GetEntityById(entityId EntityIdType) *entity {
 
 func (em *entityManager) GetEntityByLua(t *lua.LTable) *entity {
 	return em.luaEntityToEntity[t]
+}
+
+func (em *entityManager) CreateEntity(entityName string) (*entity, error) {
+	return em.CreateEntityWithId(generateEntityId(), entityName)
 }
 
 func (em *entityManager) CreateEntityWithId(entityId EntityIdType, entityName string) (*entity, error) {
@@ -93,11 +81,33 @@ func (em *entityManager) CreateEntityWithId(entityId EntityIdType, entityName st
 		return nil, err
 	}
 	if err = ent.completeEntity(); err != nil {
+		GetEntityManager().unRegisterEntity(ent)
 		return nil, err
 	}
 
 	log.Infof("create %s success", ent.String())
 	return ent, nil
+}
+
+func (em *entityManager) CreateEntityFromData(entityId EntityIdType, data map[string]interface{}) *entity {
+	if name, ok := data[entityFieldName].(string); ok == false || defMgr.GetEntityDef(name) == nil {
+		log.Warnf("CreateEntityFromData unknown entity name[%s] for entityId[%d], data: %+v", name, entityId, data)
+		return nil
+	} else {
+		ent, err := NewEntity(entityId, name)
+		if err != nil {
+			log.Errorf("entity create failed, entityName: %s, id: %d, error: %s", name, entityId, err.Error())
+			return nil
+		}
+		ent.loadData(data)
+		if err = ent.completeEntity(); err != nil {
+			GetEntityManager().unRegisterEntity(ent)
+			log.Warnf("%s CreateEntityFromData failed: %s", ent.String(), err.Error())
+			return nil
+		}
+		log.Infof("%s CreateEntityFromData success.", ent.String())
+		return ent
+	}
 }
 
 func (em *entityManager) registerEntity(ent *entity) {
@@ -191,25 +201,6 @@ func (em *entityManager) genMetaTable(name string) *lua.LTable {
 		em.metas[name] = newMetaTable
 	}
 	return em.metas[name]
-}
-
-func (em *entityManager) CreateEntityFromData(entityId EntityIdType, data map[string]interface{}) *entity {
-	if name, ok := data[entityFieldName].(string); ok == false || defMgr.GetEntityDef(name) == nil {
-		log.Warnf("CreateEntityFromData unknown entity name[%s] for entityId[%d], data: %+v", name, entityId, data)
-		return nil
-	} else {
-		ent, err := NewEntity(entityId, name)
-		if err != nil {
-			log.Errorf("entity create failed, entityName: %s, id: %d, error: %s", name, entityId, err.Error())
-			return nil
-		}
-		ent.loadData(data)
-		if err = ent.completeEntity(); err != nil {
-			return nil
-		}
-		log.Infof("%s CreateEntityFromData success.", ent.String())
-		return ent
-	}
 }
 
 func (em *entityManager) SetConnFinder(finder entityGateConnFinder) {

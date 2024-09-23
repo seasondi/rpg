@@ -36,6 +36,7 @@ func (em *robotManager) CreateEntity(entityId EntityIdType, entityName string, p
 	}
 	rb.loadData(props)
 	if err = rb.onInit(); err != nil {
+		em.RemoveEntity(rb)
 		return nil, err
 	}
 

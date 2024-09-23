@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-//注册在entity身上的api
+// 注册在entity身上的api
 var entityApiExports = map[string]lua.LGFunction{
 	/*
 		addTimer: 添加定时器, self:addTimer(2000, 0, "callback", arg1, arg2, ...)
@@ -30,14 +30,14 @@ var entityApiExports = map[string]lua.LGFunction{
 	*/
 	"destroy": destroyEntity,
 	/*
-		save: 主动保存entity, self:save(). entity会定时存盘. 相当于插队存盘,不影响定时任务.只对def中定义了Volatile.Persistent的entity生效
+		save: 主动保存entity, self:save(). entity会定时存盘,非必要不要调用.只对def中定义了Volatile.Persistent的entity生效
 		参数：无
 		返回值：无
 	*/
 	"save": saveEntity,
 }
 
-//全局api
+// 全局api
 var entryApiExports = map[string]lua.LGFunction{
 	/*
 		getReloadFiles: 获取需要热更的文件前缀
@@ -53,7 +53,7 @@ var entryApiExports = map[string]lua.LGFunction{
 	"platform": getPlatform,
 }
 
-//注册到debug的api
+// 注册到debug的api
 var debugApis = map[string]lua.LGFunction{
 	/*
 		getregistry: 获取registry
@@ -200,8 +200,8 @@ func saveEntity(L *lua.LState) int {
 		log.Warnf("saveEntity entity[%d] from lua but not found", entityId)
 		return 0
 	}
-	//脚本层主动调用save,说明是比较紧急的存盘需求,插队存盘
-	ent.SaveToDB(saveTypeFront)
+	//立即存盘
+	ent.SaveToDB()
 
 	return 0
 }

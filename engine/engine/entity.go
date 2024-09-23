@@ -74,6 +74,7 @@ func (e *entity) init() error {
 	registerApiToEntity(e.luaEntity)
 
 	e.status = EntityCreate
+
 	return nil
 }
 
@@ -103,16 +104,16 @@ func (e *entity) cancelAllTimers() {
 }
 
 func (e *entity) completeEntity() error {
-	if err := CallLuaMethodByName(e.luaEntity, onEntityInit, 0, e.luaEntity); err != nil {
-		return err
-	}
-
 	if err := e.registerSelf(); err != nil {
 		e.removeRegisterInfo()
 		return err
 	}
+
+	if err := CallLuaMethodByName(e.luaEntity, onEntityCreated, 0, e.luaEntity); err != nil {
+		return err
+	}
+
 	e.status = EntityReady
-	initEntitySaveID(e.entityId)
 	return nil
 }
 
@@ -177,10 +178,10 @@ func (e *entity) removeRegisterInfo() {
 }
 
 func (e *entity) final() {
+	_ = CallLuaMethodByName(e.luaEntity, onEntityFinal, 0, e.luaEntity)
 	GetEntityManager().unRegisterEntity(e)
 	e.removeRegisterInfo()
 	e.status = EntityDestroyed
-	clearEntitySaveID(e.entityId)
 	log.Infof("%s destroy success", e.String())
 }
 
@@ -198,14 +199,16 @@ func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 			return
 		}
 	}
+
+	if e.status <= EntityReady {
+		_ = CallLuaMethodByName(e.luaEntity, onEntityDestroy, 0, e.luaEntity)
+		e.cancelAllTimers()
+	}
+
 	//初始化失败了, 直接销毁掉
 	if e.status < EntityReady {
 		e.final()
 		return
-	}
-	if e.status == EntityReady {
-		_ = CallLuaMethodByName(e.luaEntity, onEntityDestroy, 0, e.luaEntity)
-		e.cancelAllTimers()
 	}
 
 	//var mb *ClientMailBox
@@ -247,11 +250,7 @@ func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 }
 
 func (e *entity) SavedOnDestroyCallback() {
-	//存盘过程中又建立了连接
-	if e.client == nil {
-		_ = CallLuaMethodByName(e.luaEntity, onEntityFinal, 0, e.luaEntity)
-		e.final()
-	}
+	e.final()
 }
 
 func (e *entity) GetEntityId() EntityIdType {
@@ -312,7 +311,7 @@ func (e *entity) String() string {
 	return "entity[" + e.entityName + ":" + strconv.FormatInt(int64(e.entityId), 10) + "]"
 }
 
-func (e *entity) genSaveInfo() *EntitySaveInfo {
+func (e *entity) genSaveInfo(needResponse bool) *EntitySaveInfo {
 	if e.def.volatile.persistent == false {
 		return nil
 	}
@@ -336,10 +335,10 @@ func (e *entity) genSaveInfo() *EntitySaveInfo {
 		return nil
 	}
 
-	if saveId, err := nextSaveID(e.entityId); err == nil {
-		return &EntitySaveInfo{EntityId: e.entityId, Data: data, SaveID: saveId}
-	} else {
-		return nil
+	return &EntitySaveInfo{
+		EntityId:     e.entityId,
+		Data:         data,
+		NeedResponse: needResponse,
 	}
 }
 
@@ -361,15 +360,15 @@ func (e *entity) loadData(data map[string]interface{}) {
 	}
 }
 
-func (e *entity) SaveToDB(saveType int) {
+func (e *entity) SaveToDB() {
 	if e.def.volatile.persistent == true {
-		GetEntityManager().saveEntity(e, saveType)
+		GetEntityManager().saveEntity(e)
 	}
 }
 
 func (e *entity) saveTimerCb(...interface{}) {
 	e.saveTimerId = 0
-	e.SaveToDB(saveTypeBack)
+	e.SaveToDB()
 }
 
 func (e *entity) destroyTimerCb(...interface{}) {

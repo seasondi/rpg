@@ -11,14 +11,9 @@ type ConnectIdType uint32 //客户端连接ID类型
 const entityIdTypeString = "int64" //entityId类型名
 
 const (
-	ServerTick          = 50 * time.Millisecond //服务器tick间隔
-	defaultSaveInterval = 5                     //自动存盘间隔, 单位: 分钟
-	HeartbeatTick       = 5                     //默认心跳时间,单位：秒
-)
-
-const (
-	saveTypeBack  = 0 //存盘方式 --加到队列尾
-	saveTypeFront = 1 //存盘方式 --加到队列头
+	ServerTick          = 100 * time.Millisecond //服务器tick间隔
+	defaultSaveInterval = 5                      //自动存盘间隔, 单位: 分钟
+	HeartbeatTick       = 3                      //默认心跳时间,单位：秒
 )
 
 const (
@@ -100,13 +95,13 @@ const (
 
 // etcd关注的key前缀
 const (
-	ServiceGamePrefix   = "game."
-	ServiceDBPrefix     = "db."
-	ServiceGatePrefix   = "gate."
-	ServiceClientPrefix = "client."
-	ServiceAdminPrefix  = "admin."
-	StubPrefix          = "stub."
-	EntityPrefix        = "entity."
+	ServiceGamePrefix  = "game."
+	ServiceDBPrefix    = "db."
+	ServiceGatePrefix  = "gate."
+	ServiceRobotPrefix = "robot."
+	ServiceAdminPrefix = "admin."
+	StubPrefix         = "stub."
+	EntityPrefix       = "entity."
 )
 
 // 注册到etcd的对象类型, EtcdValueType取值
@@ -189,9 +184,9 @@ const (
 	onReload           = "on_reload"             //热更
 	doGmCommand        = "do_gm_command"         //执行gm命令
 	getGmListCommand   = "get_gm_list"           //获取gm列表
-	onEntityInit       = "on_init"               //entity初始化
+	onEntityCreated    = "on_created"            //entity创建完成
 	onEntityDestroy    = "on_destroy"            //entity销毁
-	onEntityFinal      = "on_final"              //存盘的entity销毁完成
+	onEntityFinal      = "on_final"              //entity销毁完成
 	onEntityGetClient  = "on_get_client"         //entity绑定到客户端连接
 	onEntityLostClient = "on_lose_client"        //entity失去客户端连接
 )

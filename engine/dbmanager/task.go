@@ -1,10 +1,10 @@
 package main
 
 import (
-	"rpg/engine/engine"
-	"rpg/engine/message"
 	"github.com/panjf2000/gnet"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"rpg/engine/engine"
+	"rpg/engine/message"
 )
 
 type Task interface {

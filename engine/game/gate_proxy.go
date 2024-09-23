@@ -41,7 +41,7 @@ func (m *gateProxy) init() {
 func (m *gateProxy) AddGate(c gnet.Conn, name string, isInner bool) {
 	m.gateMap[name] = &gateInfo{conn: c, isInnerGate: isInner}
 	m.gateConnMap[c] = name
-	log.Infof("add gate[%s -> %s], is inner gate: %v", name, c.RemoteAddr(), isInner)
+	log.Infof("add gate[%s -> %s], inner: %v", name, c.RemoteAddr(), isInner)
 }
 
 func (m *gateProxy) RemoveGate(c gnet.Conn) {

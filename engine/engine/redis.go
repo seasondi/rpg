@@ -6,18 +6,23 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"strconv"
 	"strings"
 	"time"
 )
 
 const (
-	RedisHashGameLoad = "GameLoad" //game负载
+	redisHashGameLoad = "gameLoad" //game负载
 )
 
 type GameLoadInfo struct {
 	Name        string
 	EntityCount int
 	Time        time.Time
+}
+
+func RedisGameLoadKey() string {
+	return redisHashGameLoad + "." + strconv.FormatInt(int64(GetConfig().ServerId), 10)
 }
 
 func GetRedisMgr() *redisManager {

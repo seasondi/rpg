@@ -35,7 +35,12 @@ func getLuaLogMessage(L *lua.LState) string {
 	logStr := ""
 	n := L.GetTop()
 	for i := 1; i <= n; i++ {
-		logStr += L.Get(i).String()
+		v := L.Get(i)
+		if i == 1 && v.Type() == lua.LTTable && L.GetMetaField(v, entityFieldType) == lua.LString("entity") {
+			logStr += "[" + L.GetMetaField(v, entityFieldName).String() + ":" + L.GetField(v, entityFieldId).String() + "] "
+		} else {
+			logStr += v.String()
+		}
 	}
 	//L.SetTop(0)
 	return logStr

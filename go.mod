@@ -11,7 +11,7 @@ require (
 	github.com/layeh/gopher-json v0.0.0-20201124131017-552bb3c4c3bf
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/panjf2000/ants/v2 v2.4.7
-	github.com/panjf2000/gnet v1.5.0
+	github.com/panjf2000/gnet v1.6.7
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	github.com/vmihailenco/msgpack/v4 v4.3.13

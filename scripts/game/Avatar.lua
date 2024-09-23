@@ -1,20 +1,18 @@
 local log = require("logger")
 
-Avatar.isAvatar = true
-
-function Avatar:on_init()
-    print("call Avatar:on_init ", self.id)
-end
-
-function Avatar:on_get_client()
-    print("on_get_client: ", self.id, ", account_id: ", self.account_id)
-
-    rpg.callStub("RoleStub", "avatar_register", self.id, self.account_id)
-
+function Avatar:on_created()
+    print("call Avatar:on_created ", self.id)
     if self.is_new_role then
         self.is_new_role = false
     end
     self.level = 10
+end
+
+function Avatar:on_get_client()
+    print(self, "on_get_client: ", self.id, ", account_id: ", self.account_id)
+
+    rpg.callStub("RoleStub", "avatar_register", self.id, self.account_id)
+
     self.client.show_popup_message("avatar get client")
     self.client.test({[1]=2, [2]=3,[5]=10}, {1,9, 10, 20}, {id=10, name="1bc", cast=false, arr={9,7,8}, map={[10]=2, [20]=3}})
 end

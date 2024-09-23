@@ -154,7 +154,7 @@ func (m *Robot) newServerFunction(name string, owner EntityIdType) *lua.LTable {
 }
 
 func (m *Robot) onInit() error {
-	if err := CallLuaMethodByName(m.luaEntity, onEntityInit, 0, m.luaEntity); err != nil {
+	if err := CallLuaMethodByName(m.luaEntity, onEntityCreated, 0, m.luaEntity); err != nil {
 		return err
 	}
 	return nil

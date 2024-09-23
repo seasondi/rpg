@@ -9,6 +9,10 @@ def read_output(process, name):
     for line in iter(process.stdout.readline, b''):
         print(f"{name}: {line.decode().strip()}")
 
+    for line in iter(process.stderr.readline, b''):
+        print(f"{name}: {line.decode().strip()}")
+
+
 
 def stop_processes():
     for p in reversed(gates):

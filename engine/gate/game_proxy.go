@@ -8,6 +8,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/panjf2000/gnet"
 	clientV3 "go.etcd.io/etcd/client/v3"
+	"math/rand"
 	"rpg/engine/engine"
 	"rpg/engine/message"
 	"time"
@@ -441,15 +442,28 @@ func (m *gameProxy) getGameByLoad() *engine.TcpClient {
 		}
 	}
 	if minGameLoad == nil {
+		return m.choseRandomGame()
+	}
+	return m.getGameConnByName(minGameLoad.Name)
+}
+
+func (m *gameProxy) choseRandomGame() *engine.TcpClient {
+	if len(m.gameServers) == 0 {
 		return nil
 	}
-	return m.gameServers[minGameLoad.Name].conn
+
+	names := make([]string, 0)
+	for name := range m.gameServers {
+		names = append(names, name)
+	}
+	idx := rand.Intn(len(names))
+	return m.getGameConnByName(names[idx])
 }
 
 func (m *gameProxy) updateGameLoadInfo() {
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
-	if r, err := engine.GetRedisMgr().HGetAll(ctx, engine.RedisHashGameLoad); err != nil {
+	if r, err := engine.GetRedisMgr().HGetAll(ctx, engine.RedisGameLoadKey()); err != nil {
 		log.Warnf("update game load info, get from redis error: %s", err.Error())
 	} else {
 		for name, v := range r {

@@ -105,29 +105,14 @@ func (m *dbProxy) Close() {
 }
 
 func (m *dbProxy) doSaveEntity() {
-	needSaveNum := int32(1) //每个tick存盘数量
+	needSaveNum := 1 //每个tick存盘数量
 	if engine.GetConfig().SaveNumPerTick > 0 {
-		needSaveNum = engine.GetConfig().SaveNumPerTick
+		needSaveNum = int(engine.GetConfig().SaveNumPerTick)
 	}
-	if sl := engine.GetEntityManager().GetSaveList(); sl != nil {
-		saveNum := int32(0)
-		for {
-			if el := sl.Front(); el != nil {
-				info := el.Value.(*engine.EntitySaveInfo)
-				if ent := engine.GetEntityManager().GetEntityById(info.EntityId); ent != nil {
-					//存在插队的情况,这里需要判断存盘id是否还有效
-					if engine.IsValidSaveID(ent.GetEntityId(), info.SaveID) {
-						m.saveEntity(info)
-						saveNum += 1
-					}
-				}
-				sl.Remove(el)
-				if saveNum >= needSaveNum {
-					break
-				}
-			} else {
-				break
-			}
+
+	for _, info := range engine.GetEntitySaveManager().Get(needSaveNum) {
+		if err := m.saveEntity(info); err == nil {
+			engine.GetEntitySaveManager().Remove(info.EntityId)
 		}
 	}
 }
@@ -145,38 +130,48 @@ func (m *dbProxy) entityIdFilter(entityId engine.EntityIdType) []byte {
 	return filterBytes
 }
 
-func (m *dbProxy) saveEntity(data *engine.EntitySaveInfo) {
+func (m *dbProxy) database() string {
+	return strconv.FormatInt(int64(engine.GetConfig().ServerId), 10)
+}
+
+func (m *dbProxy) collection(entityId engine.EntityIdType) string {
+	return entityCollectionName + strconv.FormatInt(int64(entityId%10), 10)
+}
+
+func (m *dbProxy) saveEntity(data *engine.EntitySaveInfo) error {
 	msg := &message.DBCommandRequest{
-		TaskType:   uint32(engine.DBTaskTypeReplaceOne),
+		TaskType:   uint32(engine.DBTaskTypeUpdateOne),
 		EntityId:   int64(data.EntityId),
-		Database:   strconv.FormatInt(int64(engine.GetConfig().ServerId), 10),
-		Collection: entityCollectionName,
+		Database:   m.database(),
+		Collection: m.collection(data.EntityId),
 		Filter:     m.entityIdFilter(data.EntityId),
 		Data:       data.Data,
 		DbType:     uint32(engine.DBTypeProject),
 	}
 
-	if data.PreferCallback {
+	if data.NeedResponse {
 		msg.Ex = &message.ExtraInfo{Uuid: getCallbackMgr().NextUniqueID()}
 		getCallbackMgr().setCallbackWithTimeout(msg.Ex.Uuid, &saveEntityOnDestroyCallback{}, 5*time.Second)
 	}
 
 	if buf, err := engine.GetProtocol().MessageWithHead([]byte{engine.ServerMessageTypeDBCommand}, msg); err != nil {
 		log.Errorf("saveEntity[%d] generate message error: %s", msg.EntityId, err.Error())
-		return
+		return err
 	} else {
 		if _, err = m.conn.Send(buf); err != nil {
 			log.Warnf("saveEntity send message error: %s", err.Error())
+			return err
 		}
 	}
+	return nil
 }
 
 func (m *dbProxy) loadEntityFromDB(entityId engine.EntityIdType, luaCb lua.LValue, timeout time.Duration) {
 	msg := &message.DBCommandRequest{
 		TaskType:   uint32(engine.DBTaskTypeQueryOne),
 		EntityId:   int64(entityId),
-		Database:   strconv.FormatInt(int64(engine.GetConfig().ServerId), 10),
-		Collection: entityCollectionName,
+		Database:   m.database(),
+		Collection: m.collection(entityId),
 		Filter:     m.entityIdFilter(entityId),
 		DbType:     uint32(engine.DBTypeProject),
 	}

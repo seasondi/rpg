@@ -26,7 +26,7 @@ func main() {
 
 	for {
 		select {
-		case <-time.After(100 * time.Millisecond):
+		case <-time.After(engine.ServerTick):
 			c.HandleMainTick()
 		}
 	}

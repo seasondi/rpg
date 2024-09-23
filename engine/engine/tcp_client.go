@@ -287,7 +287,7 @@ func (m *TcpClient) Tick() {
 		m.markReconnect()
 	} else if shiftN > 0 {
 		if err = m.handler.OnMessage(m, data); err != nil {
-			m.markReconnect()
+			log.Warnf("handle message from %s error: %s, data len: %d", m.conn.RemoteAddr(), err.Error(), len(data))
 		}
 		//oldLen := m.inBuffer.Length()
 		m.inBuffer.Shift(shiftN)
@@ -305,7 +305,7 @@ func (m *TcpClient) Tick() {
 		}
 		//log.Tracef("outBuffSize: %d conn: %s, buf: %v", m.outBuffer.Length(), m.conn.RemoteAddr(), len(buf))
 		if n, err := m.conn.Write(buf); err != nil {
-			m.markReconnect()
+			log.Warnf("write data to %s error: %s, data len: %d", m.conn.RemoteAddr(), err.Error(), len(buf))
 		} else {
 			m.outBuffer.Shift(n)
 			log.Tracef("write %d bytes to [%s:%v]", n, m.conn.RemoteAddr(), m.ctx)

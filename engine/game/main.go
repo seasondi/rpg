@@ -34,5 +34,6 @@ func main() {
 		gnet.WithTCPKeepAlive(time.Minute),
 		gnet.WithLogger(log.Logger),
 		gnet.WithMulticore(true),
+		gnet.WithReusePort(true),
 	)
 }

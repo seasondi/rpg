@@ -1,7 +1,7 @@
 local db = require("db")
 
-function Account:on_init()
-    print("Account:on_init")
+function Account:on_created()
+    print("Account:on_created")
 end
 
 function Account:on_destroy()

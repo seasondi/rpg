@@ -27,7 +27,7 @@ func Init(st ServerType) error {
 	if err = initEtcd(); err != nil {
 		return err
 	}
-	if st != STDbMgr {
+	if st != STDbMgr && st != STRobot {
 		if err = initRedis(); err != nil {
 			return err
 		}
@@ -115,8 +115,8 @@ func Tick() {
 var lastCheckStopTime time.Time
 
 func CanStopped() bool {
-	entitiesNum := len(GetEntityManager().allEntities)
-	saveLen := GetEntityManager().saveList.Len()
+	entitiesNum := GetEntityManager().GetEntityCount()
+	saveLen := GetEntitySaveManager().Length()
 	if entitiesNum == 0 && saveLen == 0 {
 		return true
 	}

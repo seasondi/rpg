@@ -1,43 +1,65 @@
 package engine
 
-import (
-	"errors"
-	"time"
-)
+import "container/list"
 
-const (
-	entitySaveIDRange = 1000000
-)
-
-var entitySaveIdMap = map[EntityIdType]uint64{}
+var entitySaveMgr *EntitySaveManager
 
 type EntitySaveInfo struct {
-	EntityId       EntityIdType //玩家ID
-	Data           []byte       //存盘信息
-	PreferCallback bool         //是否需要数据库操作完成回调
-	SaveID         uint64       //存盘ID
+	EntityId     EntityIdType //玩家ID
+	Data         []byte       //存盘信息
+	NeedResponse bool         //是否需要数据库操作完成回调
 }
 
-func nextSaveID(entityId EntityIdType) (uint64, error) {
-	if _, ok := entitySaveIdMap[entityId]; !ok {
-		return 0, errors.New("can not save")
+type EntitySaveManager struct {
+	entityInfo map[EntityIdType]*list.Element
+	saveList   *list.List
+}
+
+func GetEntitySaveManager() *EntitySaveManager {
+	if entitySaveMgr == nil {
+		entitySaveMgr = new(EntitySaveManager)
+		entitySaveMgr.init()
 	}
-	entitySaveIdMap[entityId] += 1
-	return entitySaveIdMap[entityId], nil
+	return entitySaveMgr
 }
 
-func initEntitySaveID(entityId EntityIdType) {
-	entitySaveIdMap[entityId] = uint64(time.Now().Unix() * entitySaveIDRange)
+func (m *EntitySaveManager) init() {
+	m.entityInfo = make(map[EntityIdType]*list.Element)
+	m.saveList = list.New()
 }
 
-func clearEntitySaveID(entityId EntityIdType) {
-	delete(entitySaveIdMap, entityId)
-}
-
-func IsValidSaveID(entityId EntityIdType, saveId uint64) bool {
-	current := entitySaveIdMap[entityId]
-	if current/entitySaveIDRange != saveId/entitySaveIDRange {
-		return false
+func (m *EntitySaveManager) Add(save *EntitySaveInfo) {
+	if save != nil {
+		el := m.saveList.PushBack(save)
+		m.entityInfo[save.EntityId] = el
 	}
-	return current == saveId
+}
+
+func (m *EntitySaveManager) Remove(entityId EntityIdType) {
+	if el, ok := m.entityInfo[entityId]; ok {
+		m.saveList.Remove(el)
+		delete(m.entityInfo, entityId)
+	}
+}
+
+func (m *EntitySaveManager) Get(n int) []*EntitySaveInfo {
+	result := make([]*EntitySaveInfo, 0)
+	if n <= 0 {
+		return result
+	}
+
+	count := 0
+	for e := m.saveList.Front(); e != nil; e = e.Next() {
+		result = append(result, e.Value.(*EntitySaveInfo))
+		count++
+		if count >= n {
+			break
+		}
+	}
+
+	return result
+}
+
+func (m *EntitySaveManager) Length() int {
+	return m.saveList.Len()
 }

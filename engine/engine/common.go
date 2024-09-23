@@ -353,7 +353,7 @@ func ServiceName() string {
 		case STDbMgr:
 			serviceName = ServiceDBPrefix + serverIdStr + "." + tagStr
 		case STRobot:
-			serviceName = ServiceClientPrefix + serverIdStr + "." + tagStr
+			serviceName = ServiceRobotPrefix + serverIdStr + "." + tagStr
 		case STAdmin:
 			serviceName = ServiceAdminPrefix + serverIdStr + "." + tagStr
 		default:

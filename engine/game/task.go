@@ -73,7 +73,7 @@ func (m *ServerStopTask) HandleTask() error {
 	switch m.quitStatus {
 	case quitStatusBeginQuit:
 		log.Info("server start quit")
-		engine.GetConfig().SaveNumPerTick = 5
+		engine.GetConfig().SaveNumPerTick *= 10
 		_ = engine.CallLuaMethodByName(engine.GetGlobalEntry(), "stop_server", 0)
 		getTaskManager().Push(&ServerStopTask{quitStatus: quitStatusQuiting})
 	case quitStatusQuiting:

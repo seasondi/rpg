@@ -59,8 +59,8 @@ func (m *eventLoop) reportLoad(_ ...interface{}) {
 			Time:        time.Now(),
 		}
 		info, _ := json.Marshal(data)
-		if err := engine.GetRedisMgr().HSet(ctx, engine.RedisHashGameLoad, engine.ServiceName(), info); err != nil {
-			log.Warnf("hset to redis hash: %s, error: %s", engine.RedisHashGameLoad, err.Error())
+		if err := engine.GetRedisMgr().HSet(ctx, engine.RedisGameLoadKey(), engine.ServiceName(), info); err != nil {
+			log.Warnf("hset to redis hash: %s, error: %s", engine.RedisGameLoadKey(), err.Error())
 		}
 	}(entityCount)
 }

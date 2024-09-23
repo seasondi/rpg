@@ -1,6 +1,7 @@
+local log = require("logger")
 
-function Avatar:on_init()
-    print("Avatar:on_init: ", self.id)
+function Avatar:on_created()
+    print("Avatar:on_created: ", self.id)
 end
 
 function Avatar:on_destroy()
@@ -12,6 +13,6 @@ function Avatar:show_popup_message(msg)
 end
 
 function Avatar:test(t1, t2, skill)
-    print("Avatar:test")
+    log.info(self, "call Avatar:test")
     self.server.test(t1, t2, skill)
 end

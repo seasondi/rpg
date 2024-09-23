@@ -1,11 +1,9 @@
-local log = require("logger")
 local db = require("db")
 local common = require("common")
 local const = require("const")
-local redis = require("redis")
 
-function RoleStub:on_init()
-    print("RoleStub:on_init ", self.id)
+function RoleStub:on_created()
+    print("RoleStub:on_created ", self.id)
     self.account_map = {}  -- account -> {account_id = account_id, avatar_id = avatar_id}
     self.account_id_map = {} -- account_id -> account
     self.avatar_map = {} -- avatar_id -> account_id

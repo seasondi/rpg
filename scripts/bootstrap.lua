@@ -123,7 +123,11 @@ _G.print = function(...)
         end
         i = idx + 1
         if type(v) == "table" then
-            str = str .. detail(v)
+            if v.__type == "entity" then
+                str = str .. "[" .. v.__name .. ":" .. v.id .. "] "
+            else
+                str = str .. detail(v)
+            end
         else
             str = str .. tostring(v)
         end
