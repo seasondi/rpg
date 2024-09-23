@@ -14,11 +14,10 @@ import (
 type EntityStatus int
 
 const (
-	EntityCreate      EntityStatus = iota //创建entity
-	EntityReady                           //创建entity完成
-	EntityWaitDestroy                     //等待销毁(等待销毁定时器触发)
-	EntityDestroying                      //entity销毁中
-	EntityDestroyed                       //entity销毁完成
+	EntityCreate     EntityStatus = iota //创建entity
+	EntityReady                          //创建entity完成
+	EntityDestroying                     //entity销毁中
+	EntityDestroyed                      //entity销毁完成
 )
 
 type EntityClient struct {
@@ -191,7 +190,7 @@ func (e *entity) Status() EntityStatus {
 
 func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 	log.Infof("%s destroy. status: %d, isSaveDB: %v, needSaveDB: %v, immediately: %v", e.String(), e.status, isSaveDB, e.def.volatile.persistent, destroyImmediately)
-	if e.status == EntityDestroyed || e.status == EntityWaitDestroy {
+	if e.status == EntityDestroyed {
 		return
 	} else if e.status == EntityDestroying {
 		//10秒销毁超时时间,数据库异常可能造成存盘失败,entity一直处于EntityDestroying状态,这里允许重入destroy
@@ -216,7 +215,6 @@ func (e *entity) Destroy(isSaveDB bool, destroyImmediately bool) {
 		//mb = &e.client.mailbox
 		_ = e.setClient(nil, e.client.primary)
 	}
-	e.status = EntityWaitDestroy
 
 	if destroyImmediately {
 		if e.destroyTimerId > 0 {
@@ -428,6 +426,7 @@ primary: entity是否是该连接的主entity, 只有主entity连接信息变化
 (一个连接可绑定给多个entity,这些entity之间应当属于同个玩家,如account+avatar,只能有一个entity为主,其他均为副,需业务层保证,引擎层不做检查)
 */
 func (e *entity) setClient(c *ClientMailBox, primary bool) error {
+	//非ready状态不允许绑定连接
 	if e.status != EntityReady && c != nil {
 		if data, err := genServerErrorMessage(ErrMsgRetryLater, c.ClientId); err == nil {
 			c.Send(data)
@@ -464,14 +463,16 @@ func (e *entity) setClient(c *ClientMailBox, primary bool) error {
 			}
 		} else {
 			//断开客户端连接
-			if e.client.primary {
+			if e.status == EntityReady && e.client.primary {
 				header := GenMessageHeader(ServerMessageTypeDisconnectClient, e.client.mailbox.ClientId)
 				if data, err := GetProtocol().MessageWithHead(header, nil); err == nil {
 					e.client.mailbox.Send(data)
 				}
 			}
-			e.destroyTimerId = e.addEntityTimer(time.Duration(cfg.SaveInterval)*time.Minute, 0, e.destroyTimerCb)
-			log.Infof("add destroy timer for %s, timer id: %d", e.String(), e.destroyTimerId)
+			if e.def.volatile.persistent {
+				e.destroyTimerId = e.addEntityTimer(time.Duration(cfg.SaveInterval)*time.Minute, 0, e.destroyTimerCb)
+				log.Infof("add destroy timer for %s, timer id: %d", e.String(), e.destroyTimerId)
+			}
 		}
 	}
 
@@ -485,7 +486,7 @@ func (e *entity) setClient(c *ClientMailBox, primary bool) error {
 			e.addCheckHeartbeatTimer()
 		}
 	}
-	log.Infof("%s conn info set to %+v", e.String(), e.client)
+	log.Infof("%s conn info set to %+v, status: %d", e.String(), e.client, e.status)
 	if e.client != nil {
 		if e.destroyTimerId > 0 {
 			e.cancelEntityTimer(e.destroyTimerId)

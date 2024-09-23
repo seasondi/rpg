@@ -81,7 +81,7 @@ func (em *entityManager) CreateEntityWithId(entityId EntityIdType, entityName st
 		return nil, err
 	}
 	if err = ent.completeEntity(); err != nil {
-		GetEntityManager().unRegisterEntity(ent)
+		ent.Destroy(false, true)
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func (em *entityManager) CreateEntityFromData(entityId EntityIdType, data map[st
 		}
 		ent.loadData(data)
 		if err = ent.completeEntity(); err != nil {
-			GetEntityManager().unRegisterEntity(ent)
+			ent.Destroy(false, true)
 			log.Warnf("%s CreateEntityFromData failed: %s", ent.String(), err.Error())
 			return nil
 		}

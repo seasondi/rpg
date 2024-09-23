@@ -128,8 +128,6 @@ func (m *ClientProxy) removeConn(clientId engine.ConnectIdType) {
 		m.stopActiveCheck(clientId)
 		delete(m.clientMap, clientId)
 		log.Infof("remove client conn, clientId: %d", clientId)
-	} else {
-		log.Warnf("remove client conn but clientId: %d not found", clientId)
 	}
 }
 

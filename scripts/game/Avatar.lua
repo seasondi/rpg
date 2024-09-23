@@ -1,5 +1,6 @@
 local log = require("logger")
 
+Avatar.is_avatar = true
 function Avatar:on_created()
     print("call Avatar:on_created ", self.id)
     if self.is_new_role then

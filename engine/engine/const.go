@@ -141,7 +141,7 @@ const (
 	ClientMsgTypeEntityRpc                 //调用entity方法 C->S & S->C
 	ClientMsgTypeCreateEntity              //创建客户端entity S->C
 	ClientMsgTypeLogin                     //客户端登录 C->S
-	ClientMsgTypeClose                     //客户端断开连接 C->S
+	ClientMsgTypeClose                     //客户端断开连接 S->S, 由gate发送
 	ClientMsgTypeTips                      //服务器提示消息 S->C
 	ClientMsgTypePropSyncUpdate            //属性增量同步给客户端 S->C
 	ClientMsgTypeHeartBeat                 //客户端心跳 C->S & S->C

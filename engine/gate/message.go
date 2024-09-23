@@ -70,7 +70,6 @@ func processDisconnectClient(_ *engine.TcpClient, clientId engine.ConnectIdType)
 	if clientConn == nil {
 		return nil
 	}
-	getClientProxy().removeConn(clientId)
 	_ = clientConn.Close()
 	return nil
 }
