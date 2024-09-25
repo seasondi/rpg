@@ -25,7 +25,6 @@ var (
 	rbMgr       *robotManager      //机器人管理
 	idMgr       *entityIdGenerator //entityId生成器
 	log         *logrus.Entry      //日志Entry
-	netMgr      *network           //网络
 	protoMgr    *protocol          //协议
 	timer       *timerMgr          //定时器
 	etcdMgr     *etcd              //服务注册与发现

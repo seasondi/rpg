@@ -32,9 +32,6 @@ func Init(st ServerType) error {
 			return err
 		}
 	}
-	if err = initNetwork(); err != nil {
-		return err
-	}
 	if err = initProtocol(); err != nil {
 		return err
 	}

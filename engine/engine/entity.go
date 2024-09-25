@@ -141,7 +141,7 @@ func (e *entity) registerSelf() error {
 	}
 
 	//注册到redis
-	{
+	if e.def.volatile.hasClient {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
 		info, _ := json.Marshal(val)
