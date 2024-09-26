@@ -22,11 +22,10 @@ func GetEntityManager() *entityManager {
 }
 
 type entityManager struct {
-	metas             map[string]*lua.LTable           //entity类型名称->元表
-	allEntities       map[EntityIdType]*entity         //entityId->entity
-	luaEntityToEntity map[*lua.LTable]*entity          //脚本层entity到引擎层entity的映射
-	connFinder        entityGateConnFinder             //查询entity的gate连接
-	connMap           map[string]clientIdToEntitiesMap //gate server name -> clientId->entities
+	metas       map[string]*lua.LTable           //entity类型名称->元表
+	allEntities map[EntityIdType]*entity         //entityId->entity
+	connFinder  entityGateConnFinder             //查询entity的gate连接
+	connMap     map[string]clientIdToEntitiesMap //gate server name -> clientId->entities
 }
 
 func initEntityManager() error {
@@ -40,7 +39,6 @@ func initEntityManager() error {
 func (em *entityManager) init() {
 	em.metas = make(map[string]*lua.LTable)
 	em.allEntities = make(map[EntityIdType]*entity)
-	em.luaEntityToEntity = make(map[*lua.LTable]*entity)
 	em.connMap = make(map[string]clientIdToEntitiesMap)
 }
 
@@ -63,7 +61,11 @@ func (em *entityManager) GetEntityById(entityId EntityIdType) *entity {
 }
 
 func (em *entityManager) GetEntityByLua(t *lua.LTable) *entity {
-	return em.luaEntityToEntity[t]
+	idValue := t.RawGetString(entityFieldId)
+	if id, ok := idValue.(lua.LNumber); ok {
+		return em.GetEntityById(EntityIdType(id))
+	}
+	return nil
 }
 
 func (em *entityManager) CreateEntity(entityName string) (*entity, error) {
@@ -112,13 +114,11 @@ func (em *entityManager) CreateEntityFromData(entityId EntityIdType, data map[st
 
 func (em *entityManager) registerEntity(ent *entity) {
 	em.allEntities[ent.entityId] = ent
-	em.luaEntityToEntity[ent.luaEntity] = ent
 	luaL.RawSet(getLuaEntities(), EntityIdToLua(ent.entityId), ent.luaEntity)
 }
 
 func (em *entityManager) unRegisterEntity(ent *entity) {
 	delete(em.allEntities, ent.entityId)
-	delete(em.luaEntityToEntity, ent.luaEntity)
 	luaL.RawSet(getLuaEntities(), EntityIdToLua(ent.entityId), lua.LNil)
 }
 

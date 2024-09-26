@@ -61,9 +61,9 @@ func NewEntity(entityId EntityIdType, entityName string) (*entity, error) {
 func (e *entity) init() error {
 	e.activeTimerIds = make(map[int64]bool)
 	e.luaEntity = luaL.NewTable()
+	e.luaEntity.RawSetString(entityFieldId, EntityIdToLua(e.entityId))
 	luaL.SetMetatable(e.luaEntity, GetEntityManager().genMetaTable(e.entityName))
 	e.propsTable = luaL.NewTable()
-	e.propsTable.RawSetString(entityFieldId, EntityIdToLua(e.entityId))
 	e.def = defMgr.GetEntityDef(e.entityName)
 	if e.def == nil {
 		return fmt.Errorf("cannot find entity[%s] def, please check entities.xml", e.entityName)
