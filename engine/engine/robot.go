@@ -2,7 +2,7 @@ package engine
 
 import (
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"strconv"
 )
 

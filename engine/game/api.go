@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	clientV3 "go.etcd.io/etcd/client/v3"
 	"rpg/engine/engine"
 	"rpg/engine/message"

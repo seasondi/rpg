@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"go.mongodb.org/mongo-driver/bson"
 	"rpg/engine/message"
 	"strconv"

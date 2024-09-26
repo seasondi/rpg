@@ -1,9 +1,9 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"errors"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
+	"rpg/engine/engine"
 )
 
 //==================================DB加载entity回调==================================

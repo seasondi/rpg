@@ -2,8 +2,8 @@ package engine
 
 import (
 	"fmt"
+	lua "github.com/seasondi/gopher-lua"
 	"github.com/sirupsen/logrus"
-	lua "github.com/yuin/gopher-lua"
 	"strings"
 )
 

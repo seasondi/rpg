@@ -1,7 +1,7 @@
 package engine
 
 import (
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"runtime"
 	"time"
 )

@@ -1,7 +1,7 @@
 package engine
 
 import (
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"strings"
 )
 
@@ -20,7 +20,7 @@ func configLoader(L *lua.LState) int {
 	return 1
 }
 
-//config的table查询时无视大小写
+// config的table查询时无视大小写
 func newConfigTable() *lua.LTable {
 	t := luaL.NewTable()
 	meta := luaL.NewTable()

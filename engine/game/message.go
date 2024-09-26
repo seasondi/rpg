@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"github.com/panjf2000/gnet"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"rpg/engine/engine"
 	"rpg/engine/message"
 )

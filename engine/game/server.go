@@ -1,7 +1,7 @@
 package main
 
 import (
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"go.uber.org/atomic"
 	"rpg/engine/engine"
 )

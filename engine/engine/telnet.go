@@ -3,7 +3,7 @@ package engine
 import (
 	"bufio"
 	"encoding/json"
-	lua "github.com/yuin/gopher-lua"
+	lua "github.com/seasondi/gopher-lua"
 	"io"
 	"net"
 	"strings"
