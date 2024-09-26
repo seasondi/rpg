@@ -62,8 +62,11 @@ end
 --脚本层结束进程
 function rpg.stop_server()
     log.info("call rpg.stop_server")
-    for _, ent in pairs(rpg.entities) do
-        ent:destroy(true)
+    for _, id in ipairs(table.keys(rpg.entities)) do
+        local ent = rpg.entities[id]
+        if ent ~= nil then
+            ent:destroy(true)
+        end
     end
 end
 

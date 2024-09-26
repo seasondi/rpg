@@ -37,7 +37,7 @@ type telnet struct {
 
 func (m *telnet) init() {
 	m.env = make(map[net.Conn]*telnetEnvironment)
-	m.commandResultChan = make(chan string, 0)
+	m.commandResultChan = make(chan string, 100)
 }
 
 func (m *telnet) updateEnvironment(conn net.Conn, env *telnetEnvironment) {
@@ -99,7 +99,11 @@ func handleSession(conn net.Conn) {
 			var rsp string
 			select {
 			case data := <-telnetMgr.commandResultChan:
+				log.Info("[GM]cmd response: ", data)
 				rsp = data
+				if len(rsp) == 0 {
+					rsp = "[empty response]"
+				}
 			case <-time.After(3 * time.Second):
 				rsp = "command timeout"
 			}

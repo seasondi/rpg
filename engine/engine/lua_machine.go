@@ -43,6 +43,7 @@ func (m *luaCommandMgr) doCommands() {
 	}
 	for cmd := m.commands.Front(); cmd != nil; cmd = cmd.Next() {
 		if command, ok := cmd.Value.(*luaCommandInfo); ok {
+			log.Infof("[GM]do command: %+v", command.args)
 			command.f(command.args...)
 		}
 	}

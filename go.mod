@@ -11,7 +11,7 @@ require (
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/panjf2000/ants/v2 v2.4.7
 	github.com/panjf2000/gnet v1.6.7
-	github.com/seasondi/gopher-lua v0.0.0-20240926014425-9e09ada45100
+	github.com/seasondi/gopher-lua v1.0.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/viper v1.7.1
 	github.com/vmihailenco/msgpack/v4 v4.3.13

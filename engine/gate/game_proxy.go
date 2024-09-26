@@ -346,7 +346,7 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 	}
 
 	if gameConn == nil || gameConn.IsDisconnected() {
-		log.Warnf("gate send to game, client id[%d] has no game connection, client message type: %d", clientId, msgTy)
+		log.Warnf("gate send to game, client id[%d] has no game connection[%v], message type: %d", clientId, gameConn, msgTy)
 		if msgTy != engine.ClientMsgTypeLogin {
 			//直接断连接
 			return genServerErrorMessage(engine.ErrMsgClientNotLogin), gnet.Close
