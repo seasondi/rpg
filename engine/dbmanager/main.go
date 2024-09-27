@@ -87,10 +87,13 @@ func main() {
 		return
 	}
 
-	_ = gnet.Serve(getEventLoop(), engine.ListenProtoAddr(),
+	err = gnet.Serve(getEventLoop(), engine.ListenProtoAddr(),
 		gnet.WithTicker(true),
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithTCPKeepAlive(30*time.Second),
 		gnet.WithLogger(log.Logger),
 	)
+	if err != nil {
+		log.Errorf("gnet serve error: %s", err.Error())
+	}
 }

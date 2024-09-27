@@ -73,7 +73,7 @@ func (em *entityManager) CreateEntity(entityName string) (*entity, error) {
 }
 
 func (em *entityManager) CreateEntityWithId(entityId EntityIdType, entityName string) (*entity, error) {
-	log.Infof("create entity[%s:%d]", entityName, entityId)
+	log.Infof("create entity[%s:%d] start", entityName, entityId)
 	if entityId == 0 {
 		return nil, errors.New("entity id error")
 	}

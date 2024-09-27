@@ -38,7 +38,9 @@ func StartWebSocket() {
 	http.HandleFunc("/gm", NewWebSocketHandler)
 	http.HandleFunc("/exportTable", NewWebSocketHandler)
 	//修改该端口需同步修改tools/web/src/src/pages目录中所有的websocket端口,然后重新编译web
-	_ = http.ListenAndServe(":9000", nil)
+	if err := http.ListenAndServe(":9000", nil); err != nil {
+		log.Warnf("listen and server error: %s", err.Error())
+	}
 }
 
 func tick() {

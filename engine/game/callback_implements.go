@@ -52,7 +52,7 @@ func (m *queryDBEntityCallback) Process(err error, params ...interface{}) {
 	if err != nil {
 		args = append(args, lua.LString(err.Error()))
 	}
-	_ = engine.CallLuaMethod(m.luaFunc, 0, args...)
+	_ = engine.CallLuaMethod(engine.NewLuaMethod(m.luaFunc, "queryDBEntityCallback"), 0, args...)
 }
 
 //==================================在其他game创建entity回调==================================
@@ -86,7 +86,7 @@ func (m *createEntityAnywhereCallback) Process(err error, params ...interface{})
 	if err != nil {
 		args = append(args, lua.LString(err.Error()))
 	}
-	_ = engine.CallLuaMethod(m.luaFunc, 0, args...)
+	_ = engine.CallLuaMethod(engine.NewLuaMethod(m.luaFunc, "createEntityAnywhereCallback"), 0, args...)
 }
 
 //==================================entity销毁时存盘回调==================================
@@ -159,5 +159,5 @@ func (m *dbRawCommandCallback) Process(err error, params ...interface{}) {
 	if err != nil {
 		args = append(args, lua.LString(err.Error()))
 	}
-	_ = engine.CallLuaMethod(m.luaFunc, 0, args...)
+	_ = engine.CallLuaMethod(engine.NewLuaMethod(m.luaFunc, "dbRawCommandCallback"), 0, args...)
 }

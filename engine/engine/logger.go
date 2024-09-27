@@ -19,7 +19,6 @@ func initLogger() error {
 	logBase.SetReportCaller(true)
 	log = logBase.WithFields(logrus.Fields{
 		"Name": ServiceName(),
-		//"Pid": os.Getpid(),
 	})
 	if cfg.Logger.JsonFormat {
 		logBase.SetFormatter(&logrus.JSONFormatter{
@@ -43,14 +42,14 @@ func initLogger() error {
 	}
 	writers := make([]io.Writer, 0)
 	if cfg.Logger.LogPath != "" {
-		filename := cfg.Logger.LogPath + "/" + ServiceName()
+		filename := cfg.Logger.LogPath + "/" + getLogDir() + "/" + ServiceName()
 		//file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		//if err != nil {
 		//	return err
 		//}
 		//writers = append(writers, file)
 		writer, _ := rotatelogs.New(
-			filename+"_%Y%m%d%H%M.log",
+			filename+"_%Y%m%d%H.log",
 			rotatelogs.WithRotationTime(time.Hour),
 		)
 		writers = append(writers, writer)
@@ -79,6 +78,23 @@ func strToLogLevel(level string) logrus.Level {
 		return logrus.TraceLevel
 	}
 	return logrus.DebugLevel
+}
+
+func getLogDir() string {
+	switch gSvrType {
+	case STGame:
+		return "game"
+	case STGate:
+		return "gate"
+	case STDbMgr:
+		return "db"
+	case STAdmin:
+		return "admin"
+	case STRobot:
+		return "robot"
+	default:
+		return ""
+	}
 }
 
 func GetLogger() *logrus.Entry {

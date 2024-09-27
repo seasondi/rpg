@@ -203,7 +203,7 @@ func (m *Robot) OnServerSyncProp(name string, value lua.LValue) {
 	old := luaL.GetField(m.luaEntity, name)
 	luaL.SetField(m.luaEntity, name, value)
 	if f := luaL.GetField(m.luaEntity, "on_update_"+name); f.Type() == lua.LTFunction {
-		_ = CallLuaMethod(f, 0, m.luaEntity, old)
+		_ = CallLuaMethod(NewLuaMethod(f, "on_update_"+name), 0, m.luaEntity, old)
 	}
 }
 
@@ -224,7 +224,7 @@ func (m *Robot) OnServerSyncPropPart(name string, key lua.LValue, value lua.LVal
 			luaL.RawSet(old, ck, cv)
 		}
 		luaL.RawSet(t, key, value)
-		_ = CallLuaMethod(f, 0, m.luaEntity, old, key)
+		_ = CallLuaMethod(NewLuaMethod(f, "on_update_"+name), 0, m.luaEntity, old, key)
 	} else {
 		luaL.RawSet(t, key, value)
 	}

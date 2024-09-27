@@ -16,6 +16,25 @@ func (m *RemoveGateTask) HandleTask() error {
 	return nil
 }
 
+type AddStubTask struct {
+	name     string
+	entityId engine.EntityIdType
+}
+
+func (m *AddStubTask) HandleTask() error {
+	getStubProxy().AddStub(m.name, m.entityId)
+	return nil
+}
+
+type RemoveStubTask struct {
+	entityId engine.EntityIdType
+}
+
+func (m *RemoveStubTask) HandleTask() error {
+	getStubProxy().RemoveStub(m.entityId)
+	return nil
+}
+
 type NetMessageTask struct {
 	conn gnet.Conn
 	buf  []byte

@@ -22,11 +22,14 @@ func main() {
 	getGameProxy().SyncFromEtcd()
 	initSysSignalMgr()
 
-	_ = gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
+	err := gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithLogger(log.Logger),
 		gnet.WithMulticore(true),
 		gnet.WithTCPKeepAlive(3*time.Minute),
 		gnet.WithReusePort(true),
 	)
+	if err != nil {
+		log.Errorf("gnet serve error: %s", err.Error())
+	}
 }

@@ -77,6 +77,20 @@ func (e *entity) init() error {
 	return nil
 }
 
+func (e *entity) completeEntity() error {
+	if err := e.registerSelf(); err != nil {
+		e.removeRegisterInfo()
+		return err
+	}
+
+	if err := CallLuaMethodByName(e.luaEntity, onEntityCreated, 0, e.luaEntity); err != nil {
+		return err
+	}
+
+	e.status = EntityReady
+	return nil
+}
+
 func (e *entity) addEntityTimer(d time.Duration, repeat time.Duration, cb func(...interface{}), params ...interface{}) int64 {
 	timerId := GetTimer().AddTimer(d, repeat, cb, params...)
 	e.activeTimerIds[timerId] = true
@@ -100,20 +114,6 @@ func (e *entity) cancelAllTimers() {
 
 	e.saveTimerId = 0
 	e.destroyTimerId = 0
-}
-
-func (e *entity) completeEntity() error {
-	if err := e.registerSelf(); err != nil {
-		e.removeRegisterInfo()
-		return err
-	}
-
-	if err := CallLuaMethodByName(e.luaEntity, onEntityCreated, 0, e.luaEntity); err != nil {
-		return err
-	}
-
-	e.status = EntityReady
-	return nil
 }
 
 func (e *entity) registerSelf() error {
@@ -141,7 +141,7 @@ func (e *entity) registerSelf() error {
 	}
 
 	//注册到redis
-	if e.def.volatile.hasClient {
+	if e.def.volatile.isStub || e.def.volatile.hasClient {
 		ctx, cancel := context.WithTimeout(context.TODO(), time.Second)
 		defer cancel()
 		info, _ := json.Marshal(val)

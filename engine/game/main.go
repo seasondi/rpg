@@ -29,11 +29,14 @@ func main() {
 
 	go engine.TelnetServer(engine.GetConfig().ServerConfig().Telnet)
 
-	_ = gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
+	err := gnet.Serve(&eventLoop{}, engine.ListenProtoAddr(),
 		gnet.WithCodec(&engine.GNetCodec{}),
 		gnet.WithTCPKeepAlive(time.Minute),
 		gnet.WithLogger(log.Logger),
 		gnet.WithMulticore(true),
 		gnet.WithReusePort(true),
 	)
+	if err != nil {
+		log.Errorf("gnet serve error: %s", err.Error())
+	}
 }

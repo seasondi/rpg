@@ -8,6 +8,15 @@ import (
 	"sync"
 )
 
+type luaMethodInfo struct {
+	function lua.LValue
+	name     string
+}
+
+func NewLuaMethod(f lua.LValue, name string) *luaMethodInfo {
+	return &luaMethodInfo{function: f, name: name}
+}
+
 type luaCommandHandler func(...interface{})
 
 type luaCommandInfo struct {
@@ -62,6 +71,9 @@ func initLuaMachine() error {
 		return err
 	}
 
+	scriptChecker = newLuaChecker()
+	scriptChecker.Start()
+
 	log.Infof("lua vm machine inited.")
 	return nil
 }
@@ -104,12 +116,16 @@ func GetLuaState() *lua.LState {
 	return luaL
 }
 
-func CallLuaMethod(f lua.LValue, nRet int, args ...lua.LValue) error {
-	if luaL == nil || f == nil {
-		return errors.New("luaL or function is nil")
+func CallLuaMethod(f *luaMethodInfo, nRet int, args ...lua.LValue) error {
+	if luaL == nil || f == nil || f.function == nil {
+		return fmt.Errorf("call lua function error: %v, %v", luaL, f)
 	}
-	if err := luaL.CallByParam(luaFunctionWrapper(f, nRet), args...); err != nil {
-		log.Warnf("call lua function[%s] error: %s", f.String(), err.Error())
+
+	scriptChecker.setCheckMethod(f.name)
+	defer scriptChecker.setCheckMethod("")
+
+	if err := luaL.CallByParam(luaFunctionWrapper(f.function, nRet), args...); err != nil {
+		log.Warnf("call lua function[%s] failed", f.name)
 		return err
 	}
 	return nil
@@ -121,7 +137,7 @@ func CallLuaMethodByName(t lua.LValue, name string, nRet int, args ...lua.LValue
 	case lua.LTFunction:
 		fallthrough
 	case lua.LTTable:
-		return CallLuaMethod(field, nRet, args...)
+		return CallLuaMethod(NewLuaMethod(field, name), nRet, args...)
 	default:
 		return fmt.Errorf("call %s but function not found", name)
 	}

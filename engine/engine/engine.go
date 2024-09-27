@@ -1,15 +1,20 @@
 package engine
 
 import (
+	"errors"
 	"fmt"
 	lua "github.com/seasondi/gopher-lua"
 	"time"
 )
 
+var serverInitialized = false
+
 func Init(st ServerType) error {
+	if serverInitialized {
+		return errors.New("server is already initialized")
+	}
 	gSvrType = st
 	var err error
-	luaL = lua.NewState()
 	if err = GetCmdLine().Parse(); err != nil {
 		return err
 	}
@@ -59,6 +64,7 @@ func Init(st ServerType) error {
 			return err
 		}
 	}
+	serverInitialized = true
 	log.Info("===================engine init successfully===================")
 	return nil
 }
@@ -78,7 +84,7 @@ func Close() {
 func registerModuleToLua() {
 	preloadLogger()
 	preloadConfig()
-	preloadRedis()
+	//preloadRedis()
 }
 
 func registerGlobalEntry() {

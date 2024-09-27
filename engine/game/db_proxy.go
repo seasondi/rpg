@@ -101,7 +101,9 @@ func (m *dbProxy) init() {
 }
 
 func (m *dbProxy) Close() {
-	m.conn.Disconnect()
+	if m.conn != nil {
+		m.conn.Disconnect()
+	}
 }
 
 func (m *dbProxy) doSaveEntity() {

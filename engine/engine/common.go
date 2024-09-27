@@ -9,29 +9,31 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"reflect"
 	gJson "rpg/engine/engine/encode/gopher-json"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"unicode"
 )
 
 var (
-	luaL        *lua.LState        //lua虚拟机
-	luaCmdMgr   *luaCommandMgr     //其他协程待执行的lua命令
-	gSvrType    ServerType         //进程类型
-	cfg         *config            //配置文件
-	dataTypeMgr *dataTypes         //数据类型管理
-	defMgr      *entityDefs        //def文件管理
-	entityMgr   *entityManager     //entity管理
-	rbMgr       *robotManager      //机器人管理
-	idMgr       *entityIdGenerator //entityId生成器
-	log         *logrus.Entry      //日志Entry
-	protoMgr    *protocol          //协议
-	timer       *timerMgr          //定时器
-	etcdMgr     *etcd              //服务注册与发现
-	redisMgr    *redisManager      //redis
-	cmdLineMgr  *commandLine       //命令行
-	timeOffset  int32              //时间偏移
-	svrStep     *ServerStep        //服务器状态
+	luaL          *lua.LState        //lua虚拟机
+	luaCmdMgr     *luaCommandMgr     //其他协程待执行的lua命令
+	scriptChecker *luaChecker        //lua超时检查
+	gSvrType      ServerType         //进程类型
+	cfg           *config            //配置文件
+	dataTypeMgr   *dataTypes         //数据类型管理
+	defMgr        *entityDefs        //def文件管理
+	entityMgr     *entityManager     //entity管理
+	rbMgr         *robotManager      //机器人管理
+	idMgr         *entityIdGenerator //entityId生成器
+	log           *logrus.Entry      //日志Entry
+	protoMgr      *protocol          //协议
+	timer         *timerMgr          //定时器
+	etcdMgr       *etcd              //服务注册与发现
+	redisMgr      *redisManager      //redis
+	cmdLineMgr    *commandLine       //命令行
+	timeOffset    int32              //时间偏移
+	svrStep       *ServerStep        //服务器状态
 )
 
 // JsonToTable 不支持数组、字典混合格式
@@ -240,7 +242,11 @@ func GetLuaTraceback() string {
 }
 
 func funcFailedHandler(_ *lua.LState) int {
-	log.Error(GetLuaTraceback())
+	msg := GetLuaTraceback()
+	if strings.Contains(msg, "invalid memory") {
+		msg += "\n=========================GO STACK==========================\n" + string(debug.Stack())
+	}
+	log.Error(msg)
 	return 0
 }
 
