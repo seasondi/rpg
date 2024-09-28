@@ -91,13 +91,14 @@ func registerModuleToLua() {
 }
 
 func registerGlobalEntry() {
-	rpg := luaL.NewTable()
-	luaL.SetGlobal(globalEntry, rpg)
+	entry := luaL.NewTable()
+	luaL.SetGlobal(globalEntry, entry)
 	registerApiToEntry()
 
 	//创建entities
 	t := luaL.NewTable()
 	setLuaEntryValue(entitiesEntry, t)
+	setLuaEntryValue("database_name", lua.LString(GetProjectDB()))
 
 	switch gSvrType {
 	case STGate:

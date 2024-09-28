@@ -26,7 +26,6 @@ const.db_delete_one = 3 --删除单条数据
 const.db_query_many = 4 --查询多条数据
 const.db_delete_many = 5 --删除多条数据
 
-const.db_database_common = "common" --common库名称
 const.db_collection_account = "account" --account表
 
 const.account_is_logging = "ACCOUNT_IS_LOGGING" --账号正在登录中

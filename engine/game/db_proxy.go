@@ -133,7 +133,7 @@ func (m *dbProxy) entityIdFilter(entityId engine.EntityIdType) []byte {
 }
 
 func (m *dbProxy) database() string {
-	return strconv.FormatInt(int64(engine.GetConfig().ServerId), 10)
+	return engine.GetProjectDB()
 }
 
 func (m *dbProxy) collection(entityId engine.EntityIdType) string {

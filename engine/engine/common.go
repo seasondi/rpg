@@ -218,8 +218,8 @@ func getLuaEntryValue(v string) lua.LValue {
 }
 
 func setLuaEntryValue(key string, value lua.LValue) {
-	rpg := luaL.GetGlobal(globalEntry)
-	luaL.SetField(rpg, key, value)
+	entry := luaL.GetGlobal(globalEntry)
+	luaL.SetField(entry, key, value)
 }
 
 func GetGlobalEntry() lua.LValue {
@@ -231,8 +231,8 @@ func GetLuaTraceback() string {
 
 	traceback := luaL.GetGlobal("__G__TRACEBACK__")
 	if _, ok := traceback.(*lua.LFunction); ok == false {
-		debug := luaL.GetGlobal("debug")
-		traceback = luaL.GetField(debug, "traceback")
+		luaDebug := luaL.GetGlobal("debug")
+		traceback = luaL.GetField(luaDebug, "traceback")
 	}
 	if err := luaL.CallByParam(lua.P{Fn: traceback, NRet: 1, Protect: true}, luaL); err != nil {
 		return err.Error()
@@ -604,4 +604,8 @@ func parseTimerString(t string) (int64, error) {
 
 func GetRedisEntityKey(id EntityIdType) string {
 	return fmt.Sprintf("%s%d.%d", EntityPrefix, GetConfig().ServerId, id)
+}
+
+func GetProjectDB() string {
+	return strconv.FormatInt(int64(cfg.ServerId), 10)
 }

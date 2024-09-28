@@ -32,15 +32,21 @@ if %errorlevel% neq 0 (
     echo pip is already installed
 )
 
-python -c "import colorama" 2>nul
+python -c "import psutil" 2>nul
 if %errorlevel% neq 0 (
-    echo colorama is not installed. Installing...
-    pip install colorama
+    echo psutil is not installed. Installing...
+    pip install psutil
 ) else (
-    echo colorama is already installed.
+    echo psutil is already installed.
 )
 
-redis-cli FLUSHALL
+python -c "import pymongo" 2>nul
+if %errorlevel% neq 0 (
+    echo pymongo is not installed. Installing...
+    pip install pymongo
+) else (
+    echo pymongo is already installed.
+)
 
-python start.py
+python cleanup.py
 pause
