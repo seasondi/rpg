@@ -1,17 +1,37 @@
 import subprocess
 import threading
-import time
 import signal
+from colorama import init, Fore, Style
 
 games, gates, dbs, admins = [], [], [], []
 
+
+def highlight_text(text, target_text, color):
+    idx = text.find(target_text)
+    if idx != -1:
+        before = text[:idx]
+        part = text[idx:idx+len(target_text)]
+        after = text[idx+len(target_text)]
+        colored_text = before + color + part + Style.RESET_ALL + after
+        return colored_text, True
+    else:
+        return text, False
+
+
 def read_output(process, name):
     for line in iter(process.stdout.readline, b''):
-        print(f"{name}: {line.decode().strip()}")
+        text = line.decode().strip()
+        if "ERRO" in text:
+            print(Fore.RED + f"{name}: {text}")
+        elif "WARN" in text:
+            print(Fore.YELLOW + f"{name}: {text}")
+        elif "DEBU" in text:
+            print(Fore.GREEN + f"{name}: {text}")
+        else:
+            print(f"{name}: {text}")
 
     for line in iter(process.stderr.readline, b''):
-        print(f"{name}: {line.decode().strip()}")
-
+        print(Fore.RED + f"{name}: {line.decode().strip()}")
 
 
 def stop_processes():
@@ -43,6 +63,8 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    init(autoreset=True)
+
     all_thread = []
 
     for info in servers:
@@ -65,4 +87,5 @@ if __name__ == "__main__":
 
     for t in all_thread:
         t.join()
+
 

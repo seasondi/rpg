@@ -4,9 +4,8 @@ local const = require("const")
 
 function RoleStub:on_created()
     print("RoleStub:on_created ", self.id)
-    self.account_map = {}  -- account -> {account_id = account_id, avatar_id = avatar_id}
-    self.account_id_map = {} -- account_id -> account
-    self.avatar_map = {} -- avatar_id -> account_id
+    self.account_map = {}  -- account -> {avatar_id = id}
+    self.avatar_map = {} -- {avatar_id = account}
 end
 
 function RoleStub:on_destroy()
@@ -14,7 +13,7 @@ function RoleStub:on_destroy()
 end
 
 function RoleStub:entry(client, login_info)
-    print("call entry with info: ", detail(login_info), " from ", client)
+    print("call entry with info: ", login_info, " from ", client)
     if common.False(login_info.account) or common.False(login_info.password) then
         client:error(const.account_or_password_error)
         return
@@ -23,21 +22,14 @@ function RoleStub:entry(client, login_info)
     local account = login_info.account
     local password = login_info.password
 
-    if common.True(self.account_map[account]) and table.length(self.account_map[account]) > 0 then --有值说明账号已在登录了
+    if self.account_map[account] ~= nil then --有值说明账号已在登录了
+        local avatar_id = self.account_map[account].avatar_id
         local account_id = self.account_map[account].account_id
-        local avt_id = self.account_map[account].avatar_id
-        if common.True(account_id) then -- account已创建
-            if common.True(avt_id) then -- avatar已创建,直接走登录
-                rpg.callEntity(account_id, "login", avt_id, client, login_info)
-            else -- avatar尚未创建, 正在登录中
-                client:error(const.account_is_logging)
-            end
-        else --account没创建
-            if common.True(avt_id) then --avatar没销毁掉,需排查
-                client:error(const.login_failed)
-            else -- 都没创建
-                client:error(const.account_is_logging)
-            end
+        if common.True(avatar_id) then -- avatar已创建
+            rpg.callEntity(account_id, "login", client, avatar_id, login_info)
+        else
+            -- avatar尚未创建
+            client:error(const.account_is_logging)
         end
         return
     end
@@ -47,14 +39,14 @@ function RoleStub:entry(client, login_info)
     db.query_account(db.set_filter({}, "account", account), function(data, err)
         if err ~= nil then
             print("load account from db error: ", error)
-            self:on_login_failed(account)
+            self:on_login_failed(client, account)
         else
             if table.empty(data) then
-                self:createAccount(client, login_info)
+                self:create_account(client, login_info)
             else
                 if data.password ~= password then
                     print("password not match, account: ", account, ", password: ", password)
-                    self:on_login_failed(account)
+                    self:on_login_failed(client, account)
                 else
                     self:on_login(client, data.entityId, login_info)
                 end
@@ -63,7 +55,7 @@ function RoleStub:entry(client, login_info)
     end)
 end
 
-function RoleStub:createAccount(client, loginInfo)
+function RoleStub:create_account(client, loginInfo)
     local info = {
         ["account"] = loginInfo.account,
         ["password"] = loginInfo.password,
@@ -71,73 +63,39 @@ function RoleStub:createAccount(client, loginInfo)
     db.update_account(db.set_filter({}, "account", info.account), info, function(data, err)
         if err ~= nil then
             print("add db account error: ", error)
-            self:on_login_failed(info.account)
+            self:on_login_failed(client, info.account)
         else
             self:on_login(client, 0, loginInfo)
         end
     end)
 end
 
-function RoleStub:on_login_failed(account)
+function RoleStub:on_login_failed(client, account)
     print("on_login_failed account: ", account)
+    client:error(const.login_failed)
 end
 
-function RoleStub:on_login(client, avtId, loginInfo)
+function RoleStub:on_login(client, avatar_id, login_info)
     rpg.createEntityAnywhere("Account", function(id, error)
         if error ~= nil then
-            print("create Account error: ", error)
-            self:on_login_failed(loginInfo.account)
+            print("create Account error: ", error, ", login_info: ", login_info, ", avatar_id: ", avatar_id)
+            self:on_login_failed(client, login_info.account)
             return
         end
-        rpg.callEntity(id, "login", avtId or 0, client, loginInfo)
+        rpg.callEntity(id, "login", client, avatar_id or 0, login_info)
     end)
 end
 
-function RoleStub:avatar_register(avt_id, account_id)
-    print("avatar: ", avt_id, " register, account_id: ", account_id, ", account_map: ", self.account_map)
-    self.avatar_map[avt_id] = account_id
-    local account = self.account_id_map[account_id]
-    if account ~= nil then
-        if self.account_map[account] ~= nil then
-            self.account_map[account].avatar_id = avt_id
-        else
-            self.account_map[account] = {
-                ["account_id"] = account_id,
-                ["avatar_id"] = avt_id
-            }
-        end
-    end
+function RoleStub:avatar_register(avatar_id, account_id, account)
+    print("avatar: ", avatar_id, " register, account_id: ", account_id, ", account: ", account)
+    self.avatar_map[avatar_id] = account
+    self.account_map[account].avatar_id = avatar_id
+    self.account_map[account].account_id = account_id
 end
 
-function RoleStub:avatar_unregister(avt_id)
-    print("avatar: ", avt_id, " unregister")
-    local account_id = self.avatar_map[avt_id]
-    self.avatar_map[avt_id] = nil
-    if common.True(account_id) then
-        local account = self.account_id_map[account_id]
-        if common.True(account) then
-            self.account_map[account] = nil
-        end
-        self.account_id_map[account_id] = nil
-    end
-end
-
-function RoleStub:account_register(entity_id, account)
-    print("account: ", entity_id, " register, login account: ", account, ", account_map: ", self.account_map)
-    self.account_id_map[entity_id] = account
-    if self.account_map[account] ~= nil then
-        self.account_map[account].account_id = entity_id
-    else
-        self.account_map[account] = {
-            ["account_id"] = entity_id
-        }
-    end
-end
-
-function RoleStub:account_unregister(entity_id)
-    print("account: ", entity_id, "  unregister")
-    local account = self.account_id_map[entity_id]
-    if common.True(account) and common.True(self.account_map[account]) then
-        self.account_map[account].account_id = nil
-    end
+function RoleStub:avatar_unregister(avatar_id)
+    print("avatar: ", avatar_id, " unregister")
+    local account = self.avatar_map[avatar_id]
+    self.avatar_map[avatar_id] = nil
+    self.account_map[account] = nil
 end

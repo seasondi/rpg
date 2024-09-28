@@ -1,6 +1,6 @@
 <root>
     <Volatile>
-        <HasClient>true</HasClient>
+        <Router>true</Router>
     </Volatile>
 
     <Implements>
@@ -19,16 +19,13 @@
     </Properties>
 
     <ClientMethods>
-        <show_popup_message>
-            <Arg>STRING</Arg>
-        </show_popup_message>
     </ClientMethods>
 
     <ServerMethods>
         <login>
-            <Arg>ENTITY_ID</Arg>
             <Arg>MAILBOX</Arg>
-            <Arg>TABLE</Arg>
+            <Arg>ENTITY_ID</Arg>
+            <Arg>login_info</Arg>
         </login>
 
     </ServerMethods>

@@ -61,8 +61,12 @@ type ClientMessageTask struct {
 func (m *ClientMessageTask) HandleTask() error {
 	clientId := getClientId(m.conn)
 	if c := getClientProxy().client(clientId); c != nil {
-		if data, _ := getGameProxy().ClientSendToGame(c, m.buf[0], m.buf[1:]); data != nil {
+		if data, action := getGameProxy().ClientSendToGame(c, m.buf[0], m.buf[1:]); data != nil {
 			_ = c.AsyncWrite(data)
+			if action == gnet.Close {
+				_ = c.Close()
+				log.Infof("server close client[%d] connection", clientId)
+			}
 		}
 	} else {
 		log.Tracef("process data, client conn already closed, connectId: %d", clientId)

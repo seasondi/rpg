@@ -36,6 +36,7 @@ const (
 	defFieldVolatileHasClient  = "HasClient"     //是否拥有客户端实体
 	defFieldVolatilePersistent = "Persistent"    //entity是否需要存盘
 	defFieldVolatileIsStub     = "IsStub"        //entity是否为stub
+	defFieldVolatileRouter     = "Router"        //entity是否能跨进程通信
 	defFieldImplements         = "Implements"    //继承的其他def
 	defFieldProperties         = "Properties"    //属性列表
 	defFieldClientMethods      = "ClientMethods" //客户端rpc函数声明
@@ -81,15 +82,11 @@ type propType struct {
 	props     map[string]propertyInfo
 }
 
-/*
-volatileDef def中Volatile配置
-hasClient: 是否跟客户端连接绑定
-persistent: 是否要自动存盘
-*/
 type volatileDef struct {
-	hasClient  bool
-	persistent bool
-	isStub     bool
+	hasClient  bool //是否绑定客户端连接
+	persistent bool //是否持久化
+	isStub     bool //是否是stub类型
+	router     bool //是否可跨进程通信
 }
 
 // propertyDef def文件中的属性配置信息
@@ -328,6 +325,14 @@ func (m *entityDef) loadVolatile(el *etree.Element) {
 						m.volatile.isStub = r
 					} else {
 						log.Fatalf("Volatile.IsStub should be bool error[%s], file[%s]", err.Error(), currentLoadDefFile)
+					}
+				}
+			case defFieldVolatileRouter:
+				{
+					if r, err := strconv.ParseBool(v.Text()); err == nil {
+						m.volatile.router = r
+					} else {
+						log.Fatalf("Volatile.Router should be bool error[%s], file[%s]", err.Error(), currentLoadDefFile)
 					}
 				}
 			}

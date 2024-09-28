@@ -2,6 +2,7 @@
     <Volatile>
         <HasClient>true</HasClient>
         <Persistent>true</Persistent>
+        <Router>true</Router>
     </Volatile>
 
     <Implements>
@@ -9,9 +10,9 @@
     </Implements>
 
     <Properties>
-        <account_id>
-            <Type>ENTITY_ID</Type>
-        </account_id>
+        <account>
+            <Type>STRING</Type>
+        </account>
         <level>
             <Type>UINT32</Type>
             <Flags>OWN_CLIENT</Flags>

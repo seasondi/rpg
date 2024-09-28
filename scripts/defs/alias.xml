@@ -2,6 +2,15 @@
     <ENTITY_ID> INT64 </ENTITY_ID>
     <CLIENT_ID> UINT32 </CLIENT_ID>
 
+    <login_info>STRUCT
+        <account>
+            <Type>STRING</Type>
+        </account>
+        <password>
+            <Type>STRING</Type>
+        </password>
+    </login_info>
+
     <ITEM_MAP>MAP
         <Key>UINT32</Key>
         <Value>UINT32</Value>

@@ -7,6 +7,7 @@
     "logPath": "./log",
     "console": true
   },
+
   "etcd": {
     "endPoints": "localhost:2379"
   },
@@ -15,11 +16,7 @@
     "hosts": "localhost:6379"
   },
 
-  "mongo_common": {
-    "uri": "mongodb://localhost:27017"
-  },
-
-  "mongo_1": {
+  "mongo": {
     "uri": "mongodb://localhost:27017"
   },
 
@@ -53,15 +50,11 @@
 
   "db_1": {
     "addr": "0.0.0.0:6500",
-    "database": "mongo_1"
+    "database": "mongo"
   },
 
   "robot_1": {
     "addr": "0.0.0.0:6100"
-  },
-
-  "robot_2": {
-    "addr": "0.0.0.0:6101"
   },
 
   "admin_1": {

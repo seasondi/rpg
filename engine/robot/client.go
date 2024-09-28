@@ -1,9 +1,9 @@
 package main
 
 import (
-	"rpg/engine/engine"
 	"go.uber.org/atomic"
 	"os"
+	"rpg/engine/engine"
 	"time"
 )
 

@@ -95,6 +95,7 @@ function rpg.on_reload()
 
     local reload_list = table.concat_array(get_script_reload_files(), rpg.getReloadFiles())
     local ret, info = reload.reload(reload_list)
+    log.debug("xxxx3")
     if ret ~= true then
         log.info("reload fail: " .. info)
     else

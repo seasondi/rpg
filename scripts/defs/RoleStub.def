@@ -12,21 +12,15 @@
     <ServerMethods>
         <entry> <!-- entry接口比较特殊, 不可指定为Exposed, 客户端发起登录后触发, 第一个参数为客户端连接信息, 其他参数两端约定好格式即可 -->
             <Arg>mailbox</Arg> <!-- 客户端连接信息, 必须指定, 由引擎层赋值, 无需客户端传入 -->
-            <Arg>table</Arg>
+            <Arg>login_info</Arg>
         </entry>
         <avatar_register>
             <Arg>ENTITY_ID</Arg>
             <Arg>ENTITY_ID</Arg>
+            <Arg>STRING</Arg>
         </avatar_register>
         <avatar_unregister>
             <Arg>ENTITY_ID</Arg>
         </avatar_unregister>
-        <account_register>
-            <Arg>ENTITY_ID</Arg>
-            <Arg>STRING</Arg>
-        </account_register>
-        <account_unregister>
-            <Arg>ENTITY_ID</Arg>
-        </account_unregister>
     </ServerMethods>
 </root>

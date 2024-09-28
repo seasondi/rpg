@@ -7,7 +7,7 @@ import (
 
 type luaFunctionChecker struct {
 	name            string
-	expiredTime     time.Time
+	startTime       time.Time
 	timeoutLogged   bool
 	deadlineLogTime int64
 }
@@ -59,8 +59,9 @@ func (m *luaChecker) checkMethod() {
 		return
 	}
 
-	if time.Now().After(m.method.expiredTime) {
-		expire := time.Since(m.method.expiredTime)
+	expiredTime := m.method.startTime.Add(m.methodTimeout)
+	if time.Now().After(expiredTime) {
+		expire := time.Since(m.method.startTime)
 		if !m.method.timeoutLogged {
 			m.method.timeoutLogged = true
 			log.Warnf("[Lua Checker] method[%s] timeout, expire: %s", m.method.name, expire.String())
@@ -82,7 +83,7 @@ func (m *luaChecker) setCheckMethod(name string) {
 
 	m.method.name = name
 	if name != "" {
-		m.method.expiredTime = time.Now().Add(m.methodTimeout)
+		m.method.startTime = time.Now()
 		m.method.timeoutLogged = false
 		m.method.deadlineLogTime = 0
 	}

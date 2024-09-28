@@ -83,22 +83,34 @@ type stubInfo struct {
 }
 
 type serverInfo struct {
-	conn   *engine.TcpClient
-	isStub bool
-	load   *engine.GameLoadInfo
+	conn        *engine.TcpClient
+	isStub      bool
+	isEntryStub bool
+	load        *engine.GameLoadInfo
+}
+
+type entityServer struct {
+	entityId   engine.EntityIdType
+	serverName string
 }
 
 type gameProxy struct {
-	gameServers  map[string]*serverInfo                                             //game server name -> serverInfo
-	stubEntities map[string]*stubInfo                                               //stub entity name -> stubInfo
-	clientToGame map[engine.ConnectIdType]map[engine.EntityIdType]*engine.TcpClient //clientConnectId -> entityId-> TcpClient
-	entryStub    *stubInfo                                                          //入口stub
+	gameServers  map[string]*serverInfo                 //game server name -> serverInfo
+	clientToGame map[engine.ConnectIdType]*entityServer //clientConnectId -> entityIdInfo
+	entryStub    *stubInfo                              //登录入口stub
 }
 
 func (m *gameProxy) init() {
 	m.gameServers = make(map[string]*serverInfo)
-	m.stubEntities = make(map[string]*stubInfo)
-	m.clientToGame = make(map[engine.ConnectIdType]map[engine.EntityIdType]*engine.TcpClient)
+	m.clientToGame = make(map[engine.ConnectIdType]*entityServer)
+}
+
+func (m *gameProxy) setEntryStub(stub *stubInfo) {
+	m.entryStub = stub
+}
+
+func (m *gameProxy) getEntryStub() *stubInfo {
+	return m.entryStub
 }
 
 func (m *gameProxy) HandleUpdateGame(key string, value engine.EtcdValue) {
@@ -159,11 +171,9 @@ func (m *gameProxy) HandleUpdateStub(key string, value engine.EtcdValue) {
 		return
 	}
 
-	si := stubInfo{serverName: serverName, entityId: entityId}
-	m.stubEntities[stubName] = &si
-
 	if name, ok := value[engine.EtcdStubValueEntry].(string); ok && name == stubName {
-		m.entryStub = &si
+		si := &stubInfo{serverName: serverName, entityId: entityId}
+		m.setEntryStub(si)
 	}
 }
 
@@ -177,14 +187,9 @@ func (m *gameProxy) HandleDeleteStub(key string) {
 		return
 	}
 
-	for name, stub := range m.stubEntities {
-		if stub.entityId == entityId {
-			if m.entryStub == stub {
-				m.entryStub = nil
-			}
-			delete(m.stubEntities, name)
-			break
-		}
+	stub := m.getEntryStub()
+	if stub.entityId == entityId {
+		m.setEntryStub(nil)
 	}
 }
 
@@ -224,19 +229,6 @@ func (m *gameProxy) Disconnect() {
 	}
 }
 
-// getEntryStubConn 获取入口stub的连接信息
-func (m *gameProxy) getEntryStubConn() *engine.TcpClient {
-	if m.entryStub == nil {
-		return nil
-	}
-	for name, info := range m.gameServers {
-		if name == m.entryStub.serverName {
-			return info.conn
-		}
-	}
-	return nil
-}
-
 // sendRpcToGame 发送entity rpc消息到指定game
 func (m *gameProxy) sendRpcToGame(game *engine.TcpClient, msgTy uint8, clientId engine.ConnectIdType, data []byte) ([]byte, gnet.Action) {
 	pb := &message.GameEntityRpc{
@@ -244,20 +236,6 @@ func (m *gameProxy) sendRpcToGame(game *engine.TcpClient, msgTy uint8, clientId 
 		Source: engine.ServiceName(),
 	}
 	svrMsgType := toServerMessageType(msgTy)
-	switch svrMsgType {
-	case engine.ServerMessageTypeLogin:
-		if m.entryStub == nil {
-			log.Warn("client login but entry stub not found")
-			return genServerErrorMessage(engine.ErrMsgServerNotReady), gnet.None
-		}
-		if info, err := engine.GetProtocol().UnMarshal(data); err == nil {
-			info[engine.ClientMsgDataFieldEntityID] = m.entryStub.entityId
-			pb.Data, _ = engine.GetProtocol().Marshal(info)
-		} else {
-			log.Warnf("client login but data unmarshal error: %s", err.Error())
-			return nil, gnet.None
-		}
-	}
 	head := engine.GenMessageHeader(svrMsgType, clientId)
 	if buf, err := engine.GetProtocol().MessageWithHead(head, pb); err == nil {
 		if n, gErr := game.Send(buf); gErr != nil {
@@ -313,24 +291,23 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 	var gameConn *engine.TcpClient
 	switch msgTy {
 	case engine.ClientMsgTypeLogin:
-		gameConn = m.getEntryStubConn()
+		gameConn = m.getEntryGame()
 	case engine.ClientMsgTypeHeartBeat:
 		if entityId := m.getBindEntity(clientId); entityId == 0 {
 			responseHeartBeatToClient(client)
 			return nil, gnet.None
 		} else {
-			gameConn = m.getGameConn(clientId, entityId)
+			gameConn = m.getGameConn(clientId)
+			if gameConn == nil || gameConn.IsDisconnected() {
+				responseHeartBeatToClient(client)
+				return nil, gnet.None
+			}
 		}
 	default:
-		if clientData, err := engine.GetProtocol().UnMarshal(data); err == nil {
-			if entityId := engine.InterfaceToInt(clientData[engine.ClientMsgDataFieldEntityID]); entityId > 0 {
-				gameConn = m.getGameConn(clientId, engine.EntityIdType(entityId))
-			} else {
-				log.Warnf("entity not bind, msgType: %d, cleintId: %d", msgTy, clientId)
-				return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
-			}
-			//rpc metrics
-			if msgTy == engine.ClientMsgTypeEntityRpc {
+		gameConn = m.getGameConn(clientId)
+		if msgTy == engine.ClientMsgTypeEntityRpc {
+			if clientData, err := engine.GetProtocol().UnMarshal(data); err == nil {
+				//rpc metrics
 				if args, ok := clientData[engine.ClientMsgDataFieldArgs].([]interface{}); ok {
 					if name, ok := args[0].(string); ok {
 						if busyCount := getClientProxy().rpcMetrics(clientId, name); busyCount >= 3 {
@@ -338,42 +315,31 @@ func (m *gameProxy) ClientSendToGame(client gnet.Conn, msgTy uint8, data []byte)
 						}
 					}
 				}
+			} else {
+				log.Warnf("unmarshal client message error: %s, msgType: %d, cleintId: %d, data: %x", err.Error(), msgTy, clientId, data)
+				return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 			}
-		} else {
-			log.Warnf("unmarshal client message error: %s, msgType: %d, cleintId: %d, data: %x", err.Error(), msgTy, clientId, data)
-			return genServerErrorMessage(engine.ErrMsgInvalidMessage), gnet.Close
 		}
 	}
 
 	if gameConn == nil || gameConn.IsDisconnected() {
 		log.Warnf("gate send to game, client id[%d] has no game connection[%v], message type: %d", clientId, gameConn, msgTy)
-		if msgTy != engine.ClientMsgTypeLogin {
-			//直接断连接
-			return genServerErrorMessage(engine.ErrMsgClientNotLogin), gnet.Close
-		} else {
-			return genServerErrorMessage(engine.ErrMsgServerNotReady), gnet.None
-		}
+		return genServerErrorMessage(engine.ErrMsgServerNotReady), gnet.None
 	}
 	return m.sendRpcToGame(gameConn, msgTy, clientId, data)
 }
 
 func (m *gameProxy) onClientClosed(clientId engine.ConnectIdType) {
-	gameConns := make(map[*engine.TcpClient]bool)
-	if games, ok := m.clientToGame[clientId]; ok {
-		for _, game := range games {
-			if _, find := gameConns[game]; !find {
-				gameConns[game] = true
-			}
+	if server, ok := m.clientToGame[clientId]; ok {
+		if conn := m.getGameServer(server.serverName); conn != nil {
+			m.sendRpcToGame(conn, engine.ClientMsgTypeClose, clientId, nil)
 		}
-	}
-	for conn := range gameConns {
-		m.sendRpcToGame(conn, engine.ClientMsgTypeClose, clientId, nil)
 	}
 }
 
-func (m *gameProxy) getGameConn(clientId engine.ConnectIdType, entityId engine.EntityIdType) *engine.TcpClient {
-	if games, ok := m.clientToGame[clientId]; ok {
-		return games[entityId]
+func (m *gameProxy) getGameConn(clientId engine.ConnectIdType) *engine.TcpClient {
+	if server, ok := m.clientToGame[clientId]; ok {
+		return m.getGameServer(server.serverName)
 	}
 	return nil
 }
@@ -418,6 +384,14 @@ func (m *gameProxy) sendHeartbeat(gameConn *engine.TcpClient, clientId engine.Co
 		log.Warnf("heartbeat to game encode error: %s", err.Error())
 		return err
 	}
+}
+
+func (m *gameProxy) getEntryGame() *engine.TcpClient {
+	stub := m.getEntryStub()
+	if stub == nil {
+		return nil
+	}
+	return m.getGameConnByName(stub.serverName)
 }
 
 func (m *gameProxy) getGameByLoad() *engine.TcpClient {
@@ -479,19 +453,18 @@ func (m *gameProxy) updateGameLoadInfo() {
 
 func (m *gameProxy) getBindEntity(clientId engine.ConnectIdType) engine.EntityIdType {
 	if info, find := m.clientToGame[clientId]; find {
-		for key := range info {
-			return key
-		}
+		return info.entityId
 	}
 	return 0
 }
 
 // bindEntity 连接绑定到entity
 func (m *gameProxy) bindEntity(clientId engine.ConnectIdType, entityId engine.EntityIdType, conn *engine.TcpClient) {
-	if _, find := m.clientToGame[clientId]; !find {
-		m.clientToGame[clientId] = make(map[engine.EntityIdType]*engine.TcpClient)
+	name, _ := conn.Context().(string)
+	m.clientToGame[clientId] = &entityServer{
+		entityId:   entityId,
+		serverName: name,
 	}
-	m.clientToGame[clientId][entityId] = conn
 	log.Infof("client conn[%s:%d] bind entityId[%d] from game[%v] ", engine.ServiceName(), clientId, entityId, conn.Context())
 	getClientProxy().setBindEntity(clientId, entityId)
 	getClientProxy().stopActiveCheck(clientId)
@@ -499,12 +472,17 @@ func (m *gameProxy) bindEntity(clientId engine.ConnectIdType, entityId engine.En
 
 // unBindEntity 连接解绑entity
 func (m *gameProxy) unBindEntity(clientId engine.ConnectIdType, entityId engine.EntityIdType) {
-	if games, find := m.clientToGame[clientId]; find {
-		if game, ok := games[entityId]; ok {
-			delete(games, entityId)
-			log.Infof("client conn[%s:%d] unbind entityId[%d] from game[%v]", engine.ServiceName(), clientId, entityId, game.Context())
-		}
+	if _, find := m.clientToGame[clientId]; find {
+		delete(m.clientToGame, clientId)
+		log.Infof("client conn[%s:%d] unbind entityId[%d]", engine.ServiceName(), clientId, entityId)
 	}
+}
+
+func (m *gameProxy) getGameServer(name string) *engine.TcpClient {
+	if c, find := m.gameServers[name]; find {
+		return c.conn
+	}
+	return nil
 }
 
 // genServerErrorMessage 生成提示客户端的错误信息

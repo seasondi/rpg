@@ -70,6 +70,9 @@ func Init(st ServerType) error {
 }
 
 func Close() {
+	if scriptChecker != nil {
+		scriptChecker.Stop()
+	}
 	if luaL != nil {
 		luaL.Close()
 	}
@@ -84,7 +87,7 @@ func Close() {
 func registerModuleToLua() {
 	preloadLogger()
 	preloadConfig()
-	//preloadRedis()
+	preloadRedis()
 }
 
 func registerGlobalEntry() {

@@ -38,7 +38,6 @@ var gameAPI = map[string]lua.LGFunction{
 		setConnInfo: 设置entity的连接信息
 		参数1：clientMailBox
 		参数2：entityId
-		参数3：是否主entity
 		返回值：true: 设置成功, false: 设置失败
 	*/
 	"setConnInfo": setConnInfo,
@@ -113,17 +112,16 @@ func loadEntityFromDB(L *lua.LState) int {
 func setConnInfo(L *lua.LState) int {
 	//1: clientMailBox
 	//2: entityId
-	//3: primary
 
 	mailBox := L.CheckTable(1)
 	entityId := L.CheckNumber(2)
-	primary := L.CheckBool(3)
+	//primary := L.CheckBool(3)
 	mb := engine.ClientMailBoxFromLua(mailBox)
 	if mb == nil {
 		L.Push(lua.LBool(false))
 		return 1
 	}
-	if err := engine.GetEntityManager().UpdateEntityConnInfo(mb, engine.EntityIdType(entityId), primary); err != nil {
+	if err := engine.GetEntityManager().UpdateEntityConnInfo(mb, engine.EntityIdType(entityId), true); err != nil {
 		L.Push(lua.LBool(false))
 	} else {
 		L.Push(lua.LBool(true))

@@ -93,19 +93,16 @@ func processEntityLogin(buf []byte, clientId engine.ConnectIdType) error {
 	if err != nil {
 		return err
 	}
-	entityId := engine.InterfaceToInt(r[engine.ClientMsgDataFieldEntityID])
-	if entityId == 0 {
-		return errors.New("not found entity field")
-	}
-	ent := engine.GetEntityManager().GetEntityById(engine.EntityIdType(entityId))
-	if ent == nil {
-		log.Warnf("processEntityLogin entity[%d] not found", entityId)
-		return nil
-	}
 
 	params, ok := r[engine.ClientMsgDataFieldArgs].([]interface{})
 	if ok == false {
+		log.Errorf("entity login, invalid args data, clientId: %d", clientId)
 		return errors.New("invalid args data")
+	}
+
+	ent := engine.GetEntityManager().GetEntryEntity()
+	if ent == nil {
+		return errors.New("not found entry entity")
 	}
 
 	client := &engine.ClientMailBox{GateName: msg.Source, ClientId: clientId}

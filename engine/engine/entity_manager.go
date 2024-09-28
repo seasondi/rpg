@@ -22,10 +22,11 @@ func GetEntityManager() *entityManager {
 }
 
 type entityManager struct {
-	metas       map[string]*lua.LTable           //entity类型名称->元表
-	allEntities map[EntityIdType]*entity         //entityId->entity
-	connFinder  entityGateConnFinder             //查询entity的gate连接
-	connMap     map[string]clientIdToEntitiesMap //gate server name -> clientId->entities
+	metas             map[string]*lua.LTable           //entity类型名称->元表
+	allEntities       map[EntityIdType]*entity         //entityId->entity
+	connFinder        entityGateConnFinder             //查询entity的gate连接
+	connMap           map[string]clientIdToEntitiesMap //gate server name -> clientId->entities
+	entryStubEntityId EntityIdType
 }
 
 func initEntityManager() error {
@@ -58,6 +59,13 @@ func (em *entityManager) saveEntityOnDestroy(e *entity) {
 
 func (em *entityManager) GetEntityById(entityId EntityIdType) *entity {
 	return em.allEntities[entityId]
+}
+
+func (em *entityManager) GetEntryEntity() *entity {
+	if em.entryStubEntityId == 0 {
+		return nil
+	}
+	return em.GetEntityById(em.entryStubEntityId)
 }
 
 func (em *entityManager) GetEntityByLua(t *lua.LTable) *entity {
@@ -115,11 +123,18 @@ func (em *entityManager) CreateEntityFromData(entityId EntityIdType, data map[st
 func (em *entityManager) registerEntity(ent *entity) {
 	em.allEntities[ent.entityId] = ent
 	luaL.RawSet(getLuaEntities(), EntityIdToLua(ent.entityId), ent.luaEntity)
+	if entryEntityName == ent.entityName {
+		em.entryStubEntityId = ent.entityId
+	}
 }
 
 func (em *entityManager) unRegisterEntity(ent *entity) {
+	entId := ent.entityId
 	delete(em.allEntities, ent.entityId)
 	luaL.RawSet(getLuaEntities(), EntityIdToLua(ent.entityId), lua.LNil)
+	if entId == em.entryStubEntityId {
+		em.entryStubEntityId = 0
+	}
 }
 
 func (em *entityManager) genMetaTable(name string) *lua.LTable {

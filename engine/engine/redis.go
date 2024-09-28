@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	redisHashGameLoad = "gameLoad" //game负载
+	redisHashGameLoad = "game_load" //game负载
 )
 
 type GameLoadInfo struct {
